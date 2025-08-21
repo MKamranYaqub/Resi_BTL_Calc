@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bridging Calculator</title>
+    <!-- Use the Inter font for a clean UI -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 antialiased">
+    <!-- This is the container where your React app will be rendered -->
+    <div id="root"></div>
+
+    <!--
+      Load necessary libraries. The order is important:
+      1. Tailwind CSS for styling.
+      2. React and ReactDOM for the application logic.
+    -->
+   
+<!-- keep Tailwind, React, and ReactDOM UMD as you already have -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+<script src="rates_bridge.js"></script>
+
+<!-- add Babel standalone -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- IMPORTANT: load your app via Babel -->
+<script type="text/babel" src="calc_bridge.js"></script>
+
+</body>
+</html>
