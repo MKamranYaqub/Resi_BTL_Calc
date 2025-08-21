@@ -53,24 +53,42 @@
     </style>
   </head>
   <body>
+       
     <div class="container">
+           
       <div class="tabs">
-        <button class="tab-button" data-tab="resi">Residential BTL</button>
-        <button class="tab-button active" data-tab="commercial">
-          Commercial BTL
+               
+        <button class="tab-button active" data-tab="resi">
+          Residential BTL
         </button>
+               
+        <button class="tab-button" data-tab="Prime">
+          Residential BTL Prime
+        </button>
+               
+        <button class="tab-button" data-tab="commercial">
+                    Commercial BTL        
+        </button>
+             
       </div>
-
+      <iframe
+        id="Prime-calculator"
+        src="BTL_Resi_Prime.html"
+        class="tab-content"
+      ></iframe>
+           
       <iframe
         id="commercial-calculator"
         src="BTL_commercial.html"
-        class="tab-content active"
+        class="tab-content"
       ></iframe>
+           
       <iframe
         id="resi-calculator"
         src="BTL_Resi.html"
-        class="tab-content"
+        class="tab-content active"
       ></iframe>
+         
     </div>
 
     <script>

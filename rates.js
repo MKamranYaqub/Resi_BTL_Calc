@@ -87,7 +87,5 @@ window.ERC = {
 window.LEAD_TO = "leads@example.com";
 
 // ---- Current MVR -----//
-
-// --- Total term (in years) ---
-window.CURRENT_MVR  = 0.0859; // always 10 years
+window.CURRENT_MVR  = 0.0859; 
 
