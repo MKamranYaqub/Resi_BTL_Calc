@@ -53,57 +53,55 @@
     </style>
   </head>
   <body>
-       
     <div class="container">
-           
       <div class="tabs">
-               
         <button class="tab-button active" data-tab="resi">
           Residential BTL
         </button>
-               
         <button class="tab-button" data-tab="Prime">
           Residential BTL Prime
         </button>
-               
         <button class="tab-button" data-tab="commercial">
-                    Commercial BTL        
+          Commercial BTL
         </button>
-             
+        <button class="tab-button" data-tab="bridging">
+          Bridging calc
+        </button>
       </div>
       <iframe
         id="Prime-calculator"
         src="BTL_Resi_Prime.html"
         class="tab-content"
       ></iframe>
-           
       <iframe
         id="commercial-calculator"
         src="BTL_commercial.html"
         class="tab-content"
       ></iframe>
-           
       <iframe
         id="resi-calculator"
         src="BTL_Resi.html"
         class="tab-content active"
       ></iframe>
-         
+      <div
+        id="bridging-calculator"
+        class="tab-content"
+        style="text-align: center; padding: 50px"
+      >
+        <h2 style="color: #4a5568">Bridging Calculator</h2>
+        <p style="color: #718096">Coming Soon</p>
+      </div>
     </div>
-
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const tabs = document.querySelectorAll(".tab-button");
         const contents = document.querySelectorAll(".tab-content");
-
         tabs.forEach((tab) => {
           tab.addEventListener("click", () => {
             const targetTab = tab.dataset.tab;
-
             // Deactivate all tabs and content
             tabs.forEach((t) => t.classList.remove("active"));
             contents.forEach((c) => c.classList.remove("active"));
-
             // Activate the clicked tab and its content
             tab.classList.add("active");
             document
