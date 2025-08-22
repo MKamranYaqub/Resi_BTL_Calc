@@ -223,17 +223,7 @@ function App() {
      const annualRent = mr * termMonths;
       grossRent = annualRent / (minICR * (stressAdj / 12) * monthsLeft);
     }
-    
-
-    console.log('minICR:', minICR);
-
-console.log('stressAdj:', stressAdj);
-
-console.log('grossLTV:', grossLTV);
-
-console.log('grossRent:', grossRent);
-
-console.log('eligibleGross:', eligibleGross);
+  
    
     const N_input = toNumber(specificNetLoan);
     let grossFromNet = null;
@@ -264,7 +254,7 @@ console.log('eligibleGross:', eligibleGross);
       feeAmt,
       ltv,
       directDebit: ddAmount,
-      maxLtvRule: maxLTV,
+      maxLTVRule: maxLTV,
       belowMin,
       hitMaxCap,
     };
@@ -337,8 +327,6 @@ console.log('eligibleGross:', eligibleGross);
             <tr><td><b>Net Loan</b></td><td>${fmtMoney0(d.net)}</td></tr>
             <tr><td><b>Max Gross Loan</b></td><td>${fmtMoney0(d.gross)}</td></tr>
             <tr><td><b>Product Fee</b></td><td>${fmtMoney0(d.feeAmt)} (${Number(key).toFixed(2)}%)</td></tr>
-            <tr><td><b>Rolled Interest</b></td><td>— (Not applicable)</td></tr>
-            <tr><td><b>Deferred Interest</b></td><td>— (Not applicable)</td></tr>
             <tr><td><b>Direct Debit</b></td><td>${fmtMoney0(d.directDebit)} from month 1</td></tr>
             <tr><td><b>Revert Rate</b></td><td>${formatRevertRate(tier)}</td></tr>
             <tr><td><b>Total term | ERC</b></td><td>${TOTAL_TERM} years | ${formatERC(productType)}</td></tr>
@@ -782,7 +770,8 @@ console.log('eligibleGross:', eligibleGross);
                       gridTemplateRows: `
                         55px
                         48px 48px 48px 48px 48px
-                        48px 48px 48px 48px 48px 48px 48px
+                        48px 48px 48px 65px 48px 
+
                       `,
                     }}
                   >
@@ -803,8 +792,7 @@ console.log('eligibleGross:', eligibleGross);
 
 
                     <div className="mRow"><b>Product Fee</b></div>
-                    <div className="mRow"><b>Rolled Months Interest</b></div>
-                    <div className="mRow"><b>Deferred Interest</b></div>
+                    
                     <div className="mRow"><b>Direct Debit</b></div>
                     <div className="mRow"><b>Revert Rate</b></div>
                     <div className="mRow"><b>Total Term | ERC</b></div>
@@ -825,7 +813,7 @@ console.log('eligibleGross:', eligibleGross);
                           gridTemplateRows: `
                             55px
                             48px 48px 48px 48px 48px
-                            48px 48px 48px 48px 48px 48px 48px
+                            48px 48px 48px 65px 48px 
                           `,
                         }}
                       >
@@ -855,16 +843,7 @@ console.log('eligibleGross:', eligibleGross);
                             {fmtMoney0(data.feeAmt)} ({Number(colKey).toFixed(2)}%)
                           </div>
                         </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            — (Not applicable)
-                          </div>
-                        </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            — (Not applicable)
-                          </div>
-                        </div>
+                        
                         <div className="mRow">
                           <div className="mValue" style={valueBoxStyle}>
                             {fmtMoney0(data.directDebit)} from month 1
@@ -912,62 +891,7 @@ console.log('eligibleGross:', eligibleGross);
 
           {/* Use the SAME .matrix grid so columns line up perfectly */}
           <div className="matrix" style={{ rowGap: 0 }}>
-            {/* labels spacer column (same width as above: 200px) */}
-            <div
-              className="matrixLabels"
-              style={{
-                display: "grid",
-                gridTemplateRows: `48px`,
-                border: "1px solid transparent",
-                background: "transparent",
-              }}
-            >
-              <div className="mRow" style={{ justifyContent: "center", color: "#475569" }}>
-                <b>Max Gross (using 5.5% stress)</b>
-              </div>
-            </div>
-
-            {/* one aligned row per product column */}
-            {SHOW_FEE_COLS.map((k, idx) => {
-              const d = computeBasicGrossForCol(k);
-              if (!d) return null;
-
-              const headClass =
-                idx === 0 ? "headGreen" : idx === 1 ? "headOrange" : idx === 2 ? "headTeal" : "headBlue";
-
-              return (
-                <div
-                  key={`basic-${k}`}
-                  className="matrixCol"
-                  style={{
-                    display: "grid",
-                    gridTemplateRows: `48px`,
-                    borderTopLeftRadius: 0,
-                    borderTopRightRadius: 0,
-                  }}
-                >
-                  <div className="mRow" style={{ padding: 6 }}>
-                    <div
-                      className="mValue"
-                      style={{
-                        width: "100%",
-                        textAlign: "center",
-                        fontWeight: 800,
-                        background: "#f1f5f9",
-                        borderRadius: 8,
-                        padding: "10px 12px",
-                      }}
-                    >
-                      {fmtMoney0(d.gross)}{" "}
-                      <span style={{ fontWeight: 700 }}>
-                        @ {d.ltv != null ? `${Math.round(d.ltv * 100)}% LTV` : "—"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
+            
             {/* Footer line under the aligned row */}
             <div style={{ gridColumn: "1 / -1", textAlign: "center", marginTop: 12, fontSize: 12, color: "#334155" }}>
               <span style={{ marginRight: 16 }}>
