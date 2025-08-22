@@ -62,7 +62,7 @@ const InputField = ({
       className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:bg-gray-200"
     />
     {helperText && (
-      <div className="bg-gray-100 rounded-md p-2 mt-2 text-xs text-gray-600">
+      <div className="bg-gray-50 rounded-md p-2 mt-2 text-xs text-gray-600">
         {helperText}
       </div>
     )}
@@ -93,13 +93,37 @@ const SelectField = ({
       ))}
     </select>
     {helperText && (
-      <div className="bg-gray-100 rounded-md p-2 mt-2 text-xs text-gray-600">
+      <div className="bg-gray-50 rounded-md p-2 mt-2 text-xs text-gray-600">
         {helperText}
       </div>
     )}
   </div>
 );
+const PillHeader = ({ children, className = "" }) => (
+  <div
+    className={
+      "text-white text-sm font-semibold tracking-wide uppercase text-center py-3 rounded-t-xl " +
+      className
+    }
+  >
+    {children}
+  </div>
+);
 
+// A single row with 3 cells: Label | Fixed | Variable
+const ResultRow = ({ label, fixed, variable }) => (
+  <div className="grid grid-cols-[1fr,1fr,1fr] gap-2 px-2">
+    <div className="m-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium flex items-center">
+      {label}
+    </div>
+    <div className="m-1 px-3 py-2 bg-gray-100 text-gray-800 rounded-md text-sm font-semibold text-center">
+      {fixed}
+    </div>
+    <div className="m-1 px-3 py-2 bg-gray-100 text-gray-800 rounded-md text-sm font-semibold text-center">
+      {variable}
+    </div>
+  </div>
+);
 // The main application component for the Bridging Calculator.
 function App() {
   const { useState, useMemo, useEffect } = React;
@@ -112,7 +136,7 @@ function App() {
   const [propertyType, setPropertyType] = useState("Residential");
   const [chargeType, setChargeType] = useState("First Charge");
   const [useSpecificNetLoan, setUseSpecificNetLoan] = useState("No");
-  const [specificNetLoan, setSpecificNetLoan] = useState(250000);
+  const [specificNetLoan, setSpecificNetLoan] = useState(0);
   const [isValid, setIsValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [loanProduct, setLoanProduct] = useState(null);
@@ -593,7 +617,7 @@ function App() {
                 options={loanProductOptions}
               />
               {productLimits && (
-                <div className="bg-gray-100 rounded-md p-2 mt-2 flex justify-between text-xs text-gray-600">
+                <div className="bg-gray-50 rounded-md p-2 mt-2 flex justify-between text-xs text-gray-600">
                   <div className="flex-1 text-center">
                     <span className="font-semibold block">Min Loan:</span>
                     {fmtMoney0(productLimits.loanSizeLimits?.min)}
@@ -639,13 +663,14 @@ function App() {
               onChange={(e) => setUseSpecificNetLoan(e.target.value)}
               options={["No", "Yes"]}
             />
-            {useSpecificNetLoan === "Yes" && (
-              <InputField
-                label="Specific Net Loan (£)"
-                value={specificNetLoan}
-                onChange={(e) => setSpecificNetLoan(e.target.value)}
-              />
-            )}
+
+            <InputField
+              label="Specific Net Loan (£)"
+              value={specificNetLoan}
+              onChange={(e) => setSpecificNetLoan(e.target.value)}
+              disabled={useSpecificNetLoan === "No"}
+            />
+
             <SelectField
               label="Loan Term (months)"
               value={loanTerm}
@@ -736,162 +761,144 @@ function App() {
           )}
         </div>
 
-        {/* Results */}
+        {/* Results Section */}
         <div className="mt-12">
           <SectionTitle>Summary of Results</SectionTitle>
+
           {!isValid && (
             <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
               <p>{errorMessage}</p>
             </div>
           )}
+
           {displayResults && (
-            <div className="grid grid-cols-3 gap-px text-center bg-gray-200 border border-gray-200 rounded-lg overflow-hidden">
-              {/* Header Row */}
-              <div className="p-4 font-bold text-gray-800 bg-gray-50 text-left"></div>
-              <div className="p-4 font-bold text-gray-800 bg-sky-200">
-                Fixed Bridge
-              </div>
-              <div className="p-4 font-bold text-gray-800 bg-emerald-200">
-                Variable Bridge
+            <div className="border border-gray-200 rounded-xl shadow-sm overflow-hidden bg-white">
+              {/* Header row: empty label column + two product pill headers */}
+              <div className="grid grid-cols-[1fr,1fr,1fr]">
+                <div className="bg-white" />
+                <PillHeader className="bg-emerald-600">Fixed Bridge</PillHeader>
+                <PillHeader className="bg-sky-600">Variable Bridge</PillHeader>
               </div>
 
-              {/* Data Rows */}
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Coupon Monthly Rate
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {calculationResults.fixed.couponMonthlyRate !== null
-                  ? fmtPct(calculationResults.fixed.couponMonthlyRate)
-                  : "N/A"}
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {calculationResults.variable.couponMonthlyRate !== null
-                  ? fmtPct(calculationResults.variable.couponMonthlyRate)
-                  : "N/A"}
-              </div>
-
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Full Monthly Rate
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-white">
-                {calculationResults.fixed.fullMonthlyRate !== null
-                  ? fmtPct(calculationResults.fixed.fullMonthlyRate)
-                  : "N/A"}
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-white">
-                {calculationResults.variable.fullMonthlyRate !== null
-                  ? fmtPct(calculationResults.variable.fullMonthlyRate)
-                  : "N/A"}
-              </div>
-
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Gross Loan
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {fmtMoney0(calculationResults.fixed.grossLoan)}
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {fmtMoney0(calculationResults.variable.grossLoan)}
-              </div>
-
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Net Loan
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-white">
-                {calculationResults.fixed.netLoan !== null
-                  ? fmtMoney0(calculationResults.fixed.netLoan)
-                  : "N/A"}
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-white">
-                {calculationResults.variable.netLoan !== null
-                  ? fmtMoney0(calculationResults.variable.netLoan)
-                  : "N/A"}
-              </div>
-
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Current LTV
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {fmtPct(calculationResults.fixed.ltv)}
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {fmtPct(calculationResults.variable.ltv)}
-              </div>
-
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Arrangement Fee
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-white">
-                {fmtMoney0(calculationResults.fixed.arrangementFee)} (
-                {fmtPct(window.ARRANGEMENT_FEE_Bridges)})
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-white">
-                {fmtMoney0(calculationResults.variable.arrangementFee)} (
-                {fmtPct(window.ARRANGEMENT_FEE_Bridges)})
-              </div>
-
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Serviced Months
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {calculationResults.fixed.servicedMonths}
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {calculationResults.variable.servicedMonths}
-              </div>
-
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Total Interest
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-white">
-                {calculationResults.fixed.totalInterest !== null
-                  ? fmtMoney0(calculationResults.fixed.totalInterest)
-                  : "N/A"}
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-white">
-                {calculationResults.variable.totalInterest !== null
-                  ? fmtMoney0(calculationResults.variable.totalInterest)
-                  : "N/A"}
-              </div>
-
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Rolled Interest
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {calculationResults.fixed.rolledInterest !== null
-                  ? fmtMoney0(calculationResults.fixed.rolledInterest)
-                  : "N/A"}
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {calculationResults.variable.rolledInterest !== null
-                  ? fmtMoney0(calculationResults.variable.rolledInterest)
-                  : "N/A"}
-              </div>
-
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Monthly Direct Debit
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-white">
-                {calculationResults.fixed.monthlyDirectDebit !== null
-                  ? fmtMoney0(calculationResults.fixed.monthlyDirectDebit)
-                  : "N/A"}
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-white">
-                {fmtMoney0(calculationResults.variable.monthlyDirectDebit ?? 0)}
-              </div>
-
-              <div className="p-4 font-semibold text-gray-700 bg-white text-left">
-                Total Repayment
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {calculationResults.fixed.totalRepayment !== null
-                  ? fmtMoney0(calculationResults.fixed.totalRepayment)
-                  : "N/A"}
-              </div>
-              <div className="p-4 font-bold text-gray-600 bg-gray-50">
-                {calculationResults.variable.totalRepayment !== null
-                  ? fmtMoney0(calculationResults.variable.totalRepayment)
-                  : "N/A"}
+              {/* Content rows */}
+              <div className="py-2">
+                <ResultRow
+                  label="Coupon Monthly Rate"
+                  fixed={
+                    calculationResults.fixed.couponMonthlyRate != null
+                      ? fmtPct(calculationResults.fixed.couponMonthlyRate)
+                      : "N/A"
+                  }
+                  variable={
+                    calculationResults.variable.couponMonthlyRate != null
+                      ? fmtPct(calculationResults.variable.couponMonthlyRate)
+                      : "N/A"
+                  }
+                />
+                <ResultRow
+                  label="Full Monthly Rate"
+                  fixed={
+                    calculationResults.fixed.fullMonthlyRate != null
+                      ? fmtPct(calculationResults.fixed.fullMonthlyRate)
+                      : "N/A"
+                  }
+                  variable={
+                    calculationResults.variable.fullMonthlyRate != null
+                      ? fmtPct(calculationResults.variable.fullMonthlyRate)
+                      : "N/A"
+                  }
+                />
+                <ResultRow
+                  label="Gross Loan"
+                  fixed={fmtMoney0(calculationResults.fixed.grossLoan)}
+                  variable={fmtMoney0(calculationResults.variable.grossLoan)}
+                />
+                <ResultRow
+                  label="Net Loan"
+                  fixed={
+                    calculationResults.fixed.netLoan != null
+                      ? fmtMoney0(calculationResults.fixed.netLoan)
+                      : "N/A"
+                  }
+                  variable={
+                    calculationResults.variable.netLoan != null
+                      ? fmtMoney0(calculationResults.variable.netLoan)
+                      : "N/A"
+                  }
+                />
+                <ResultRow
+                  label="Current LTV"
+                  fixed={fmtPct(calculationResults.fixed.ltv)}
+                  variable={fmtPct(calculationResults.variable.ltv)}
+                />
+                <ResultRow
+                  label="Arrangement Fee"
+                  fixed={`${fmtMoney0(
+                    calculationResults.fixed.arrangementFee
+                  )} (${fmtPct(window.ARRANGEMENT_FEE_Bridges)})`}
+                  variable={`${fmtMoney0(
+                    calculationResults.variable.arrangementFee
+                  )} (${fmtPct(window.ARRANGEMENT_FEE_Bridges)})`}
+                />
+                <ResultRow
+                  label="Serviced Months"
+                  fixed={calculationResults.fixed.servicedMonths}
+                  variable={calculationResults.variable.servicedMonths}
+                />
+                <ResultRow
+                  label="Total Interest"
+                  fixed={
+                    calculationResults.fixed.totalInterest != null
+                      ? fmtMoney0(calculationResults.fixed.totalInterest)
+                      : "N/A"
+                  }
+                  variable={
+                    calculationResults.variable.totalInterest != null
+                      ? fmtMoney0(calculationResults.variable.totalInterest)
+                      : "N/A"
+                  }
+                />
+                <ResultRow
+                  label="Rolled Interest"
+                  fixed={
+                    calculationResults.fixed.rolledInterest != null
+                      ? fmtMoney0(calculationResults.fixed.rolledInterest)
+                      : "N/A"
+                  }
+                  variable={
+                    calculationResults.variable.rolledInterest != null
+                      ? fmtMoney0(calculationResults.variable.rolledInterest)
+                      : "N/A"
+                  }
+                />
+                <ResultRow
+                  label="Monthly Direct Debit"
+                  fixed={
+                    calculationResults.fixed.monthlyDirectDebit != null
+                      ? fmtMoney0(calculationResults.fixed.monthlyDirectDebit)
+                      : "N/A"
+                  }
+                  variable={
+                    calculationResults.variable.monthlyDirectDebit != null
+                      ? fmtMoney0(
+                          calculationResults.variable.monthlyDirectDebit
+                        )
+                      : "N/A"
+                  }
+                />
+                <ResultRow
+                  label="Total Repayment"
+                  fixed={
+                    calculationResults.fixed.totalRepayment != null
+                      ? fmtMoney0(calculationResults.fixed.totalRepayment)
+                      : "N/A"
+                  }
+                  variable={
+                    calculationResults.variable.totalRepayment != null
+                      ? fmtMoney0(calculationResults.variable.totalRepayment)
+                      : "N/A"
+                  }
+                />
               </div>
             </div>
           )}
