@@ -1,0 +1,366 @@
+// fusion_calc.js
+
+const { useState, useMemo, useCallback } = React;
+
+/* --------------------------------- UTILITY FUNCTIONS --------------------------------- */
+const toNumber = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+const fmtMoney0 = (n) =>
+  n || n === 0
+    ? n.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })
+    : "—";
+const fmtPct = (p, dp = 2) =>
+  p || p === 0 ? `${(p * 100).toFixed(dp)}%` : "—";
+
+/* ----------------------------------- MAIN APP COMPONENT ----------------------------------- */
+function App() {
+  // Input state variables
+  const [propertyType, setPropertyType] = useState("Residential");
+  const [grossLoanInput, setGrossLoanInput] = useState("3000000");
+  const [propertyValue, setPropertyValue] = useState("4000000");
+  const [rolledMonths, setRolledMonths] = useState("6");
+  const [deferredInterest, setDeferredInterest] = useState(0.01);
+  const [useSpecificNet, setUseSpecificNet] = useState("No");
+  const [specificNetLoan, setSpecificNetLoan] = useState("");
+
+  // State for specific error messages
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Client details
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [sending, setSending] = useState(false);
+
+  // Constants from rates file
+  const BBR = window.FUSION_BBR || 0.04;
+  const ARRANGEMENT_FEE_PCT = window.FUSION_ARRANGEMENT_FEE_PCT || 0.02;
+  const TERM_MONTHS = window.FUSION_TERM_MONTHS || 24;
+  const ERC_DETAILS = window.FUSION_ERC || "N/A";
+  const LTV_CAPS = window.FUSION_LTV_CAPS || {
+      'Residential': 0.75,
+      'Semi / Full Commercial': 0.70
+  };
+  const PRODUCTS = window.FUSION_PRODUCTS || {};
+  const MIN_LOAN_AMOUNT = 100000;
+
+  const calculation = useMemo(() => {
+    setErrorMessage("");
+
+    const pv = toNumber(propertyValue);
+    const snl = toNumber(specificNetLoan);
+    const rm = toNumber(rolledMonths);
+    const di = toNumber(deferredInterest);
+    const gl = toNumber(grossLoanInput);
+
+    // --- 1. Initial Input Validation ---
+    if (useSpecificNet === "No" && gl && gl < MIN_LOAN_AMOUNT) {
+        setErrorMessage(`The minimum loan amount is ${fmtMoney0(MIN_LOAN_AMOUNT)}.`);
+        return null;
+    }
+    if (useSpecificNet === "No" && !gl) {
+         setErrorMessage(`Please enter a valid Gross Loan amount. The minimum is ${fmtMoney0(MIN_LOAN_AMOUNT)}.`);
+        return null;
+    }
+     if (useSpecificNet === "Yes" && (!snl || snl <= 0)) {
+        setErrorMessage("Please enter a valid Specific Net Loan amount.");
+        return null;
+    }
+    if (!pv || pv <= 0) {
+        setErrorMessage("Please enter a valid Property Value.");
+        return null;
+    }
+
+    // --- 2. Determine Preliminary Gross Loan and Find Product ---
+    let preliminaryGrossLoan = 0;
+    if (useSpecificNet === "Yes") {
+        // ** UPDATED REVERSE CALCULATION LOGIC **
+        // First, an approximate calculation to find the product tier
+        const approxCouponRate = PRODUCTS[propertyType]?.Small?.rate || 0.05;
+        const rolledFactorApprox = ((approxCouponRate - di) / 12) * rm;
+        const deferredFactor = (di / 12) * TERM_MONTHS; // Deferred cost is based on the full term
+        const denominatorApprox = 1 - ARRANGEMENT_FEE_PCT - rolledFactorApprox - deferredFactor;
+
+        if (denominatorApprox <= 0) {
+            setErrorMessage("The combination of fees and costs is not feasible.");
+            return null;
+        }
+        preliminaryGrossLoan = snl / denominatorApprox;
+    } else {
+        preliminaryGrossLoan = gl;
+    }
+
+    const productTier = PRODUCTS[propertyType];
+    if (!productTier) {
+        setErrorMessage("No products available for the selected property type.");
+        return null;
+    }
+
+    let eligibleProduct = null;
+    for (const key in productTier) {
+        const product = productTier[key];
+        if (preliminaryGrossLoan >= product.minLoan && preliminaryGrossLoan <= product.maxLoan) {
+            eligibleProduct = { name: key, ...product };
+            break;
+        }
+    }
+
+    if (!eligibleProduct) {
+        setErrorMessage(`The loan amount of ${fmtMoney0(preliminaryGrossLoan)} does not fall into any available product category.`);
+        return null;
+    }
+
+    // --- 3. Final Calculation and LTV Check ---
+    const couponRate = eligibleProduct.rate;
+    let initialGrossLoan = 0;
+
+    // Recalculate gross loan with the accurate coupon rate if using specific net
+    if (useSpecificNet === "Yes") {
+        const rolledFactor = ((couponRate - di) / 12) * rm;
+        const deferredFactor = (di / 12) * TERM_MONTHS;
+        const denominator = 1 - ARRANGEMENT_FEE_PCT - rolledFactor - deferredFactor;
+
+        if (denominator <= 0) {
+            setErrorMessage("The combination of fees and costs is not feasible with this product's rate.");
+            return null;
+        }
+        initialGrossLoan = snl / denominator;
+    } else {
+        initialGrossLoan = gl;
+    }
+    // ** END OF UPDATED LOGIC **
+
+
+    const maxLtv = LTV_CAPS[propertyType] || 0.75;
+    const calculatedLtv = initialGrossLoan / pv;
+    const epsilon = 1e-9;
+
+    if (calculatedLtv > maxLtv + epsilon) {
+        const maxLoanFromLtv = pv * maxLtv;
+        setErrorMessage(`The requested loan of ${fmtMoney0(initialGrossLoan)} exceeds the maximum LTV of ${fmtPct(maxLtv)} for this property type. The maximum loan is ${fmtMoney0(maxLoanFromLtv)}.`);
+        return null;
+    }
+
+    const grossLoan = initialGrossLoan;
+    
+    if (grossLoan < eligibleProduct.minLoan || grossLoan > eligibleProduct.maxLoan) {
+        setErrorMessage("After applying LTV limits, the loan amount no longer fits the selected product category.");
+        return null;
+    }
+
+    // --- 4. Success - Calculate Remaining Details ---
+    const arrangementFee = grossLoan * ARRANGEMENT_FEE_PCT;
+    const rolledCost = (grossLoan * (couponRate - di) / 12) * rm;
+    const fullRate = couponRate + BBR;
+    const payRate = (couponRate - di) + BBR;
+    const deferredCost = (grossLoan * di / 12) * TERM_MONTHS;
+    const netLoan = grossLoan - arrangementFee - rolledCost - deferredCost;
+    const totalInterest = (grossLoan * fullRate / 12) * TERM_MONTHS;
+    const monthlyDirectDebit = (grossLoan * payRate) / 12;
+
+    return {
+      productName: `${propertyType} Fusion ${eligibleProduct.name}`,
+      productColor: eligibleProduct.name.toLowerCase(),
+      couponRate,
+      deferredRate: di,
+      fullRate,
+      payRate,
+      grossLoan,
+      netLoan,
+      ltv: calculatedLtv,
+      maxProductLtv: maxLtv,
+      arrangementFee,
+      term: `${TERM_MONTHS} Months (12m Extension Possible)`,
+      erc: ERC_DETAILS,
+      serviceMonths: rm,
+      rolledCost,
+      deferredCost,
+      totalInterest,
+      monthlyDirectDebit,
+    };
+  }, [propertyType, grossLoanInput, propertyValue, rolledMonths, deferredInterest, useSpecificNet, specificNetLoan]);
+  
+  const handleSendToZapier = async () => {
+    setSending(true);
+    const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/utqeezi/";
+
+    if (!calculation) {
+      alert("Please ensure the calculation is complete before sending.");
+      setSending(false);
+      return;
+    }
+
+    const payload = {
+      // Inputs
+      clientName: clientName,
+      clientPhone: clientPhone,
+      clientEmail: clientEmail,
+      propertyType: propertyType,
+      propertyValue: propertyValue,
+      grossLoanInput: grossLoanInput,
+      useSpecificNet: useSpecificNet,
+      specificNetLoan: specificNetLoan,
+      rolledMonths: rolledMonths,
+      deferredInterest: deferredInterest,
+      // All Outputs from the 'calculation' object
+      ...calculation,
+    };
+
+    try {
+      const response = await fetch(zapierWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        alert("Data sent to Zapier successfully!");
+      } else {
+        alert("Failed to send data to Zapier. Please check the URL and your Zap setup.");
+      }
+    } catch (error) {
+      console.error("Error sending data to Zapier:", error);
+      alert("An error occurred while sending the data.");
+    } finally {
+      setSending(false);
+    }
+  };
+  
+  const headerColors = {
+    small: '#16a34a',
+    medium: '#f97316',
+    large: '#2563eb',
+  };
+
+  return (
+    <div className="container">
+      <div className="card">
+        <h3>Fusion Calculator</h3>
+        <div className="input-grid">
+          <div className="field">
+            <label>Property Type</label>
+            <select value={propertyType} onChange={(e) => setPropertyType(e.target.value)}>
+              <option>Residential</option>
+              <option>Semi / Full Commercial</option>
+            </select>
+          </div>
+          <div className="field">
+            <label>Property Value (£)</label>
+            <input type="number" placeholder="e.g. 1000000" value={propertyValue} onChange={(e) => setPropertyValue(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Use Specific Net Loan?</label>
+            <select value={useSpecificNet} onChange={(e) => setUseSpecificNet(e.target.value)}>
+              <option>No</option>
+              <option>Yes</option>
+            </select>
+          </div>
+          {useSpecificNet === 'Yes' ? (
+            <div className="field">
+              <label>Specific Net Loan (£)</label>
+              <input type="number" placeholder="e.g. 450000" value={specificNetLoan} onChange={(e) => setSpecificNetLoan(e.target.value)} />
+            </div>
+          ) : (
+            <div className="field">
+              <label>Gross Loan (£)</label>
+              <input type="number" placeholder="e.g. 750000" value={grossLoanInput} onChange={(e) => setGrossLoanInput(e.target.value)} />
+              <div className="field-helper">Product is selected automatically based on this amount.</div>
+            </div>
+          )}
+          <div className="field">
+            <label>Months to be Rolled</label>
+            <select value={rolledMonths} onChange={(e) => setRolledMonths(e.target.value)}>
+              {[...Array(7).keys()].map(i => <option key={i+6}>{i + 6}</option>)}
+            </select>
+            <div className="field-helper">Interest for these months is added to the loan.</div>
+          </div>
+          <div className="field">
+              <label>Deferred Interest</label>
+              <div className="slider-container">
+                  <input type="range" min="0" max="0.02" step="0.0005" value={deferredInterest} onChange={e => setDeferredInterest(parseFloat(e.target.value))} />
+                  <span className="slider-value">{fmtPct(deferredInterest)}</span>
+              </div>
+          </div>
+          <div className="field" style={{ gridColumn: 'span 2', justifySelf: 'end', marginTop: '1rem' }}>
+              <div style={{ background: '#fcf8f9ff', border: '1px solid #0e6de9ff', borderRadius: '8px', padding: '0.75rem 1rem', fontSize: '0.8rem', color: '#475569' }}>
+                  <div><b>Fusion Small:</b> £100k - £3m</div>
+                  <div><b>Fusion Medium:</b> £3m - £10m</div>
+                  <div><b>Fusion Large:</b> £10m+</div>
+              </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3>Send Data</h3>
+        <div className="input-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', alignItems: 'flex-end' }}>
+          <div className="field" style={{ gridColumn: 'span 2' }}>
+            <label>Client Name</label>
+            <input type="text" placeholder="e.g. Jane Doe" value={clientName} onChange={e => setClientName(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Contact Number</label>
+            <input type="tel" placeholder="e.g. 07123456789" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Client Email</label>
+            <input type="email" placeholder="e.g. jane.doe@example.com" value={clientEmail} onChange={e => setClientEmail(e.target.value)} />
+          </div>
+          <div className="field">
+            <button onClick={handleSendToZapier} className="primaryBtn" disabled={sending || !calculation}>
+              {sending ? 'Sending...' : 'Send to Zapier'}
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="card">
+        <h3>Summary</h3>
+        {calculation ? (
+          <div className="summary-table" style={{ gridTemplateColumns: '1fr 1.5fr' }}>
+            <div className="summary-header label-header" style={{ gridColumn: '1 / -1', background: headerColors[calculation.productColor] || '#334155', justifyContent: 'center' }}>
+              {calculation.productName}
+            </div>
+            {[
+              { label: 'Full Rate', key: 'fullRate', format: (val) => `${fmtPct(calculation.couponRate)} + BBR` },
+              { label: 'Pay Rate', key: 'payRate', format: (val) => `${fmtPct(calculation.couponRate - calculation.deferredRate)} + BBR` },
+              { label: 'Gross Loan', key: 'grossLoan', format: fmtMoney0 },
+              { label: 'Net Loan', key: 'netLoan', format: fmtMoney0 },
+              { label: 'LTV (Loan to Value)', key: 'ltv', format: fmtPct },
+              { label: 'Arrangement Fee', key: 'arrangementFee', format: (val) => `${fmtMoney0(val)} (${fmtPct(ARRANGEMENT_FEE_PCT)})` },
+              { label: 'Term', key: 'term' },
+              { label: 'Service Months', key: 'serviceMonths' },
+              { label: 'Rolled Cost', key: 'rolledCost', format: fmtMoney0 },
+              { label: 'Deferred Cost', key: 'deferredCost', format: fmtMoney0 },
+              { label: 'Total Interest', key: 'totalInterest', format: fmtMoney0 },
+              { label: 'Monthly Direct Debit', key: 'monthlyDirectDebit', format: (val) => `${fmtMoney0(val)} from month ${calculation.serviceMonths + 1}` },
+              { label: 'ERC', key: 'erc' },
+              { label: 'Max Product LTV', key: 'maxProductLtv', format: fmtPct },
+            ].map(({ label, key, format }) => (
+              <React.Fragment key={key}>
+                <div className="summary-cell label-cell">{label}</div>
+                <div className="summary-cell value-cell" style={{ justifyContent: 'center' }}>
+                  {format ? format(calculation[key]) : calculation[key]}
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '20px', background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', color: '#b45309' }}>
+            {errorMessage || "Please enter the loan details to see a summary."}
+          </div>
+        )}
+      </div>
+      
+      <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem', marginTop: '-8px' }}>
+          <div style={{ marginBottom: '8px' }}>
+            <b>BBR (Bank of England Base Rate)</b> is currently <b>{fmtPct(BBR)}</b>
+          </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);

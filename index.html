@@ -12,6 +12,8 @@
       }
       .container {
         padding: 24px;
+        max-width: 1200px; /* Added max-width */
+        margin: 0 auto; /* Added margin to center the container */
       }
       .tabs {
         display: flex;
@@ -67,6 +69,9 @@
         <button class="tab-button" data-tab="bridging">
           Bridging calc
         </button>
+        <button class="tab-button" data-tab="fusion">
+          Fusion Calc
+        </button>
       </div>
       <iframe
         id="Prime-calculator"
@@ -86,6 +91,11 @@
       <iframe
         id="bridging-calculator"
         src="Bridge.html"
+        class="tab-content"
+      ></iframe>
+      <iframe
+        id="fusion-calculator"
+        src="fusion.html"
         class="tab-content"
       ></iframe>
     </div>

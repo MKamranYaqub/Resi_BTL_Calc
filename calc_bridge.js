@@ -900,6 +900,12 @@ function App() {
                   }
                 />
               </div>
+              <div className="bg-gray-50 px-4 py-3 text-sm text-slate-500 text-center border-t border-gray-200">
+                <div className="mb-2">
+                  <b>BBR (Bank of England Base Rate)</b> is currently{" "}
+                  <b>{fmtPct(window.STANDARD_BBR_Bridges)}</b>
+                </div>
+              </div>
             </div>
           )}
         </div>
