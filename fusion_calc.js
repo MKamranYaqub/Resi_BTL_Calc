@@ -76,11 +76,9 @@ function App() {
     // --- 2. Determine Preliminary Gross Loan and Find Product ---
     let preliminaryGrossLoan = 0;
     if (useSpecificNet === "Yes") {
-        // ** UPDATED REVERSE CALCULATION LOGIC **
-        // First, an approximate calculation to find the product tier
         const approxCouponRate = PRODUCTS[propertyType]?.Small?.rate || 0.05;
         const rolledFactorApprox = ((approxCouponRate - di) / 12) * rm;
-        const deferredFactor = (di / 12) * TERM_MONTHS; // Deferred cost is based on the full term
+        const deferredFactor = (di / 12) * TERM_MONTHS;
         const denominatorApprox = 1 - ARRANGEMENT_FEE_PCT - rolledFactorApprox - deferredFactor;
 
         if (denominatorApprox <= 0) {
@@ -116,7 +114,6 @@ function App() {
     const couponRate = eligibleProduct.rate;
     let initialGrossLoan = 0;
 
-    // Recalculate gross loan with the accurate coupon rate if using specific net
     if (useSpecificNet === "Yes") {
         const rolledFactor = ((couponRate - di) / 12) * rm;
         const deferredFactor = (di / 12) * TERM_MONTHS;
@@ -130,8 +127,6 @@ function App() {
     } else {
         initialGrossLoan = gl;
     }
-    // ** END OF UPDATED LOGIC **
-
 
     const maxLtv = LTV_CAPS[propertyType] || 0.75;
     const calculatedLtv = initialGrossLoan / pv;
@@ -182,51 +177,96 @@ function App() {
     };
   }, [propertyType, grossLoanInput, propertyValue, rolledMonths, deferredInterest, useSpecificNet, specificNetLoan]);
   
-  const handleSendToZapier = async () => {
-    setSending(true);
-    const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/utqeezi/";
+const handleSendToZapier = async () => {
+  setSending(true);
 
-    if (!calculation) {
-      alert("Please ensure the calculation is complete before sending.");
+  if (!calculation) {
+    alert("Please ensure the calculation is complete before sending.");
+    setSending(false);
+    return;
+  }
+
+  const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/utq78nr/";
+
+  const payload = {
+    // Inputs
+    clientName, clientPhone, clientEmail,
+    propertyType, propertyValue, grossLoanInput,
+    useSpecificNet, specificNetLoan, rolledMonths, deferredInterest,
+    // Outputs
+    ...calculation,
+    submissionTimestamp: new Date().toISOString(),
+  };
+
+  // Helper: read body even on errors (for logging)
+  const readText = async (res) => { try { return await res.text(); } catch { return "<no body>"; } };
+
+  try {
+    // --- 1) TRY JSON (will likely fail due to CORS, but useful if you later proxy server-side)
+    const res = await fetch(zapierWebhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }, // triggers preflight
+      body: JSON.stringify(payload),
+    });
+    const t = await readText(res);
+    console.log("[Zapier JSON] status:", res.status, "ok:", res.ok, "body:", t);
+
+    if (res.ok) {
+      alert("Data sent to Zapier successfully (JSON)!");
       setSending(false);
       return;
     }
+  } catch (e) {
+    console.warn("JSON POST failed (expected in browser due to CORS):", e);
+  }
 
-    const payload = {
-      // Inputs
-      clientName: clientName,
-      clientPhone: clientPhone,
-      clientEmail: clientEmail,
-      propertyType: propertyType,
-      propertyValue: propertyValue,
-      grossLoanInput: grossLoanInput,
-      useSpecificNet: useSpecificNet,
-      specificNetLoan: specificNetLoan,
-      rolledMonths: rolledMonths,
-      deferredInterest: deferredInterest,
-      // All Outputs from the 'calculation' object
-      ...calculation,
-    };
-
-    try {
-      const response = await fetch(zapierWebhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        alert("Data sent to Zapier successfully!");
-      } else {
-        alert("Failed to send data to Zapier. Please check the URL and your Zap setup.");
-      }
-    } catch (error) {
-      console.error("Error sending data to Zapier:", error);
-      alert("An error occurred while sending the data.");
-    } finally {
-      setSending(false);
+  try {
+    // --- 2) FALLBACK: form-encoded (simple request → no preflight)
+    const form = new URLSearchParams();
+    for (const [k, v] of Object.entries(payload)) {
+      form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v ?? ""));
     }
-  };
+
+    const res2 = await fetch(zapierWebhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: form.toString(),
+    });
+    const t2 = await readText(res2);
+    console.log("[Zapier FORM] status:", res2.status, "ok:", res2.ok, "body:", t2);
+
+    if (res2.ok) {
+      alert("Data sent to Zapier successfully (form-encoded)!");
+      setSending(false);
+      return;
+    }
+  } catch (e2) {
+    console.warn("Form-encoded POST failed (unusual):", e2);
+  }
+
+  try {
+    // --- 3) LAST RESORT: sendBeacon (CORS-exempt fire-and-forget)
+    const form = new URLSearchParams();
+    for (const [k, v] of Object.entries(payload)) {
+      form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v ?? ""));
+    }
+    const ok = navigator.sendBeacon(
+      zapierWebhookUrl,
+      new Blob([form.toString()], { type: "application/x-www-form-urlencoded;charset=UTF-8" })
+    );
+    if (ok) {
+      alert("Data queued with sendBeacon (no response to read). Check Zap trigger.");
+    } else {
+      alert("Failed to queue data with sendBeacon.");
+    }
+  } catch (e3) {
+    console.error("sendBeacon error:", e3);
+    alert("Failed to send data. See console for details.");
+  } finally {
+    setSending(false);
+  }
+};
+
   
   const headerColors = {
     small: '#16a34a',
