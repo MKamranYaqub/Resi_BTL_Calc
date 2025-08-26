@@ -150,6 +150,7 @@ function App() {
     const rolledCost = (grossLoan * (couponRate - di) / 12) * rm;
     const fullRate = couponRate + BBR;
     const payRate = (couponRate - di) + BBR;
+     const payRatetodispaly = (couponRate - di);
     const deferredCost = (grossLoan * di / 12) * TERM_MONTHS;
     const netLoan = grossLoan - arrangementFee - rolledCost - deferredCost;
     const totalInterest = (grossLoan * fullRate / 12) * TERM_MONTHS;
@@ -169,7 +170,8 @@ function App() {
       arrangementFee,
       term: `${TERM_MONTHS} Months (12m Extension Possible)`,
       erc: ERC_DETAILS,
-      serviceMonths: rm,
+      serviceMonths:  TERM_MONTHS - rm,
+      rm,
       rolledCost,
       deferredCost,
       totalInterest,
@@ -212,7 +214,7 @@ const handleSendToZapier = async () => {
     console.log("[Zapier JSON] status:", res.status, "ok:", res.ok, "body:", t);
 
     if (res.ok) {
-      alert("Data sent to Zapier successfully (JSON)!");
+      alert("Email Sent Successfully!");
       setSending(false);
       return;
     }
@@ -236,7 +238,7 @@ const handleSendToZapier = async () => {
     console.log("[Zapier FORM] status:", res2.status, "ok:", res2.ok, "body:", t2);
 
     if (res2.ok) {
-      alert("Data sent to Zapier successfully (form-encoded)!");
+      alert("Email send sucessfully!");
       setSending(false);
       return;
     }
@@ -350,7 +352,7 @@ const handleSendToZapier = async () => {
           </div>
           <div className="field">
             <button onClick={handleSendToZapier} className="primaryBtn" disabled={sending || !calculation}>
-              {sending ? 'Sending...' : 'Send to Zapier'}
+              {sending ? 'Sending...' : 'Send Email'}
             </button>
           </div>
         </div>
@@ -375,7 +377,7 @@ const handleSendToZapier = async () => {
               { label: 'Rolled Cost', key: 'rolledCost', format: fmtMoney0 },
               { label: 'Deferred Cost', key: 'deferredCost', format: fmtMoney0 },
               { label: 'Total Interest', key: 'totalInterest', format: fmtMoney0 },
-              { label: 'Monthly Direct Debit', key: 'monthlyDirectDebit', format: (val) => `${fmtMoney0(val)} from month ${calculation.serviceMonths + 1}` },
+              { label: 'Monthly Direct Debit', key: 'monthlyDirectDebit', format: (val) => `${fmtMoney0(val)} from month ${calculation.rm + 1}` },
               { label: 'ERC', key: 'erc' },
               { label: 'Max Product LTV', key: 'maxProductLtv', format: fmtPct },
             ].map(({ label, key, format }) => (
