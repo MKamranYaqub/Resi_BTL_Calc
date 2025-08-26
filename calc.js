@@ -28,11 +28,6 @@ const MAX_DEFERRED_FIX = 0.0125;      // 1.25%
 const MAX_DEFERRED_TRACKER = 0.02;    // 2.00%
 const SHOW_FEE_COLS = ["6", "4", "3", "2"];
 
-/* EmailJS credentials (override via window.EMAILJS_* if you prefer) */
-const EMAILJS_PUBLIC_KEY = window.EMAILJS_PUBLIC_KEY || "YOUR_PUBLIC_KEY";
-const EMAILJS_SERVICE_ID = window.EMAILJS_SERVICE_ID || "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = window.EMAILJS_TEMPLATE_ID || "YOUR_TEMPLATE_ID";
-
 /* ------------------------------ UTIL FUNCTIONS ----------------------------- */
 const toNumber = (v) => {
   const n = Number(v);
@@ -286,6 +281,7 @@ function App() {
   function computeBasicGrossForCol(colKey) {
     const base = selected?.[colKey];
     if (base == null) return null;
+    
 
     const pv = toNumber(propertyValue);
     const mr = toNumber(monthlyRent);
@@ -347,107 +343,97 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productType, tier, propertyValue, monthlyRent, useSpecificNet, specificNetLoan, flatAboveComm, canShowMatrix]);
 
-  /* --------------------------- Email via EmailJS ---------------------------- */
-  function buildEmailHtml(colData) {
-    const safe = (v) => (v == null ? "—" : v);
+  /* --------------------------- Send Quote via Zapier ---------------------------- */
+  const handleSendQuote = async () => {
+    setSending(true);
 
-    const inputsHtml = `
-      <h3 style="margin:0 0 6px">Client</h3>
-      <table cellspacing="0" cellpadding="6" style="border-collapse:collapse">
-        <tr><td><b>Name</b></td><td>${safe(clientName)}</td></tr>
-        <tr><td><b>Phone</b></td><td>${safe(clientPhone)}</td></tr>
-        <tr><td><b>Email</b></td><td>${safe(clientEmail)}</td></tr>
-      </table>
-      <h3 style="margin:16px 0 6px">Case Inputs</h3>
-      <table cellspacing="0" cellpadding="6" style="border-collapse:collapse">
-        <tr><td><b>Tier</b></td><td>${tier}</td></tr>
-        <tr><td><b>Product Type</b></td><td>${productType}</td></tr>
-        <tr><td><b>Property Value</b></td><td>${safe(propertyValue)}</td></tr>
-        <tr><td><b>Monthly Rent</b></td><td>${safe(monthlyRent)}</td></tr>
-        <tr><td><b>Specific Net Used</b></td><td>${useSpecificNet}</td></tr>
-        ${useSpecificNet === "Yes" ? `<tr><td><b>Specific Net</b></td><td>${safe(specificNetLoan)}</td></tr>` : ""}
-      </table>
-    `;
-
-    const colsHtml = colData
-      .map(([key, d]) => {
-        return `
-          <h4 style="margin:16px 0 6px">BTL, ${Number(key)}% Product Fee</h4>
-          <table cellspacing="0" cellpadding="6" style="border-collapse:collapse">
-            <tr><td><b>Product Name</b></td><td>${d.productName}</td></tr>
-            <tr><td><b>Full Rate</b></td><td>${d.fullRateText}</td></tr>
-            <tr><td><b>Pay Rate</b></td><td>${d.payRateText} (using ${(d.deferredCapPct * 100).toFixed(2)}% deferred cap)</td></tr>
-            <tr><td><b>Net Loan</b></td><td>${fmtMoney0(d.net)}</td></tr>
-            <tr><td><b>Max Gross Loan</b></td><td>${fmtMoney0(d.gross)}</td></tr>
-            <tr><td><b>Product Fee</b></td><td>${fmtMoney0(d.feeAmt)} (${Number(key).toFixed(2)}%)</td></tr>
-            <tr><td><b>Rolled Interest</b></td><td>${fmtMoney0(d.rolled)} (${d.rolledMonths} months)</td></tr>
-            <tr><td><b>Deferred Interest</b></td><td>${fmtMoney0(d.deferred)} (${(d.deferredCapPct * 100).toFixed(2)}%)</td></tr>
-            <tr><td><b>Direct Debit</b></td><td>${fmtMoney0(d.directDebit)} from month ${MAX_ROLLED_MONTHS + 1}</td></tr>
-            <tr><td><b>Revert Rate</b></td><td>${formatRevertRate(tier)}</td></tr>
-            <tr><td><b>Total term | ERC</b></td><td>${TOTAL_TERM} years | ${formatERC(productType)}</td></tr>
-            <tr><td><b>Max Product LTV</b></td><td>${(d.maxLtvRule * 100).toFixed(0)}%</td></tr>
-          </table>
-        `;
-      })
-      .join("");
-
-    return `
-      <div style="font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial">
-        <h2 style="margin:0 0 8px">MFS BTL Residential – Illustration</h2>
-        <div style="font-size:13px;color:#334155;margin:0 0 12px">
-          Generated for <b>${clientName || "Client"}</b>
-        </div>
-        ${inputsHtml}
-        <h3 style="margin:16px 0 6px">Products</h3>
-        ${colsHtml}
-      </div>
-    `;
-  }
-
-  async function sendLeadEmail() {
-    if (!clientEmail) {
-      alert("Please enter the client’s email address.");
+    if (!canShowMatrix || !bestSummary) {
+      alert("Please ensure the calculation is complete before sending.");
+      setSending(false);
       return;
     }
-    if (!window.emailjs) {
-      alert(
-        'EmailJS script not found. Add it to index.html:\n<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>'
-      );
-      return;
-    }
+
+    // --- IMPORTANT: Replace with your actual Zapier Webhook URL ---
+    const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/uhocm7m/";
+
+    const columnCalculations = SHOW_FEE_COLS
+      .map((k) => ({ feePercent: k, ...computeForCol(k) }))
+      .filter((d) => !!d.gross);
+      const basicGrossCalculations = SHOW_FEE_COLS
+  .map((k) => {
+    const d = computeBasicGrossForCol(k);
+    return d ? { feePercent: k, ...d } : null;
+  })
+  .filter(Boolean);
+
+    const payload = {
+      requestId: `MFS-RESI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      clientName, clientPhone, clientEmail,
+      propertyValue, monthlyRent, productType, useSpecificNet, specificNetLoan,
+      hmo, mufb, holiday, flatAboveComm,
+      expat, ftl, offshore,
+      adverse, mortArrears, unsArrears, ccjDefault, bankruptcy,
+      tier,
+      bestSummary,
+      allColumnData: columnCalculations,
+      basicGrossColumnData: basicGrossCalculations,
+      submissionTimestamp: new Date().toISOString(),
+      revertRate: formatRevertRate(tier),
+      totalTerm: `${TOTAL_TERM} years`,
+      erc: formatERC(productType),
+      currentMvr: CURRENT_MVR,
+      standardBbr: STANDARD_BBR,
+    };
+    
+
+    const readText = async (res) => { try { return await res.text(); } catch { return "<no body>"; } };
+
     try {
-      if (!window.__emailjs_inited) {
-        emailjs.init(EMAILJS_PUBLIC_KEY);
-        window.__emailjs_inited = true;
+      // --- 1) TRY JSON POST (will likely fail in browser due to CORS) ---
+      const res = await fetch(zapierWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const t = await readText(res);
+      console.log("[Quote Send JSON] status:", res.status, "ok:", res.ok, "body:", t);
+
+      if (res.ok) {
+        alert("Quote sent successfully!");
+        setSending(false);
+        return;
+      }
+    } catch (e) {
+      console.warn("JSON POST failed (expected in browser due to CORS):", e);
+    }
+
+    try {
+      // --- 2) FALLBACK: Form-encoded POST (this will work in the browser) ---
+      const form = new URLSearchParams();
+      for (const [k, v] of Object.entries(payload)) {
+        form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v ?? ""));
       }
 
-      const colData = SHOW_FEE_COLS
-        .map((k) => [k, computeForCol(k)])
-        .filter(([, d]) => !!d);
+      const res2 = await fetch(zapierWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: form.toString(),
+      });
+      const t2 = await readText(res2);
+      console.log("[Quote Send FORM] status:", res2.status, "ok:", res2.ok, "body:", t2);
 
-      const html = buildEmailHtml(colData);
-
-      setSending(true);
-
-      const params = {
-        to_email: clientEmail,
-        cc_email: LEAD_TO,
-        from_name: clientName || "Client",
-        reply_to: clientEmail,
-        subject: `BTL illustration – ${productType} | ${tier}`,
-        message_html: html,     // use {{message_html}} in your EmailJS template
-      };
-
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
-
-      alert("Email sent successfully 🎉");
-    } catch (err) {
-      console.error(err);
-      alert("Email failed to send. Please check your EmailJS IDs and template.");
-    } finally {
-      setSending(false);
+      if (res2.ok) {
+        alert("Quote sent successfully!");
+        setSending(false);
+        return;
+      }
+    } catch (e2) {
+      console.warn("Form-encoded POST failed:", e2);
     }
-  }
+
+    alert("Failed to send quote. Please check the console for more details.");
+    setSending(false);
+  };
 
   /* --------------------------- Inline value styles -------------------------- */
   const valueBoxStyle = {
@@ -676,8 +662,12 @@ function App() {
           </div>
 
           <div className="field" style={{ alignSelf: "end" }}>
-            <button onClick={sendLeadEmail} className="primaryBtn" disabled={sending}>
-              {sending ? "Sending…" : "Send Email"}
+            <button 
+              onClick={handleSendQuote} 
+              className="primaryBtn" 
+              disabled={sending || !canShowMatrix}
+            >
+              {sending ? "Sending…" : "Send Quote via Email"}
             </button>
             <div className="note"></div>
           </div>
@@ -786,8 +776,8 @@ function App() {
                       display: "grid",
                       gridTemplateRows: `
                         55px
-                        48px 48px 48px 48px 48px
-                        48px 48px 48px 48px 48px 48px 48px
+                        48px 48px 65px 48px 48px
+                        48px 48px 48px 48px 48px 65px 48px
                       `,
                     }}
                   >
@@ -828,8 +818,8 @@ function App() {
                           display: "grid",
                           gridTemplateRows: `
                             55px
-                            48px 48px 48px 48px 48px
-                            48px 48px 48px 48px 48px 48px 48px
+                            48px 48px 65px 48px 48px
+                            48px 48px 48px 48px 48px 65px 48px
                           `,
                         }}
                       >

@@ -28,11 +28,6 @@ const MAX_DEFERRED_FIX = 0.0125; // 1.25%
 const MAX_DEFERRED_TRACKER = 0.015; // 1.50%
 const SHOW_FEE_COLS = ["6", "4", "2"];
 
-/* EmailJS credentials (override via window.EMAILJS_* if you prefer) */
-const EMAILJS_PUBLIC_KEY = window.EMAILJS_PUBLIC_KEY || "YOUR_PUBLIC_KEY";
-const EMAILJS_SERVICE_ID = window.EMAILJS_SERVICE_ID || "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = window.EMAILJS_TEMPLATE_ID || "YOUR_TEMPLATE_ID";
-
 /* ------------------------------ UTIL FUNCTIONS ----------------------------- */
 const toNumber = (v) => {
   const n = Number(v);
@@ -58,14 +53,11 @@ function formatERC(productType) {
   return ercArr.join(" / ");
 }
 
-// Placeholder for missing function
 function getMaxLTV(tier, flatAboveComm) {
-  // This function's logic is missing, so we'll provide a placeholder.
-  // In a real application, this would come from a data source or be more complex.
   if (tier === "Tier 2" || flatAboveComm === "Yes") {
-    return 0.7; // Example LTV for Tier 2 or flat above commercial
+    return 0.7;
   }
-  return 0.70; // Example default LTV
+  return 0.70;
 }
 
 /* ----------------------------------- App ----------------------------------- */
@@ -134,27 +126,16 @@ function App() {
 
     if (adverse === "Yes") {
       const advMapMA = {
-        "0 in 24": 1,
-        "0 in 18": 1,
-        "2 in 18, 0 in 6": 2,
-        "Other, more recent": 2,
+        "0 in 24": 1, "0 in 18": 1, "2 in 18, 0 in 6": 2, "Other, more recent": 2,
       };
       const advMapUA = {
-        "0 in 24": 1,
-        "0 in 12": 1,
-        "2 in last 18": 2,
-        "Other, more recent": 2,
+        "0 in 24": 1, "0 in 12": 1, "2 in last 18": 2, "Other, more recent": 2,
       };
       const advMapCD = {
-        "0 in 24": 1,
-        "0 in 18": 1,
-        "2 in 18, 0 in 6": 2,
-        "Other, more recent": 2,
+        "0 in 24": 1, "0 in 18": 1, "2 in 18, 0 in 6": 2, "Other, more recent": 2,
       };
       const advMapBank = {
-        Never: 1,
-        "Discharged >3yrs": 1,
-        "All considered by referral": 2,
+        Never: 1, "Discharged >3yrs": 1, "All considered by referral": 2,
       };
       const adverseTier = Math.max(
         advMapMA[mortArrears] || 1,
@@ -167,19 +148,8 @@ function App() {
 
     return t === 1 ? "Tier 1" : "Tier 2";
   }, [
-    hmo,
-    mufb,
-    expat,
-    ownerocc,
-    devexit,
-    flatAboveComm,
-    ftl,
-    offshore,
-    adverse,
-    mortArrears,
-    unsArrears,
-    ccjDefault,
-    bankruptcy,
+    hmo, mufb, expat, ownerocc, devexit, flatAboveComm, ftl, offshore,
+    adverse, mortArrears, unsArrears, ccjDefault, bankruptcy,
   ]);
 
   const selected =
@@ -195,13 +165,9 @@ function App() {
   const STANDARD_BBR = window.STANDARD_BBR_Commercial ?? 0.04;
   const STRESS_BBR = window.STRESS_BBR_Commercial ?? 0.0425;
   const TERM_MONTHS = window.TERM_MONTHS_Commercial ?? {
-    "2yr Fix": 24,
-    "3yr Fix": 36,
-    "2yr Tracker": 24,
-    Tracker: 24, // backward-compat
+    "2yr Fix": 24, "3yr Fix": 36, "2yr Tracker": 24, Tracker: 24,
   };
   const TOTAL_TERM = window.TOTAL_TERM_Commercial ?? 10;
-  const LEAD_TO = window.LEAD_TO_Commercial ?? "leads@example.com";
   const CURRENT_MVR = window.CURRENT_MVR_Commercial ?? 0.0859;
 
   /* ------------------------------ Calculations ----------------------------- */
@@ -214,31 +180,21 @@ function App() {
     return !!pv;
   }, [monthlyRent, propertyValue, specificNetLoan, useSpecificNet]);
 
-  // Main per-column calculation (with rolled/deferred caps)
   function computeForCol(colKey) {
     const feePct = Number(colKey) / 100;
     const base = selected?.[colKey];
     if (base == null) return null;
 
     const displayRate = isTracker ? base + STANDARD_BBR : base;
-
-    const fullRateText = isTracker
-      ? `${(base * 100).toFixed(2)}% + BBR`
-      : `${(base * 100).toFixed(2)}%`;
-
+    const fullRateText = isTracker ? `${(base * 100).toFixed(2)}% + BBR` : `${(base * 100).toFixed(2)}%`;
     const deferredCap = isTracker ? MAX_DEFERRED_TRACKER : MAX_DEFERRED_FIX;
     const payRateAdj = Math.max(displayRate - deferredCap, 0);
-    const payRateText = isTracker
-      ? `${((base - deferredCap) * 100).toFixed(2)}% + BBR`
-      : `${(payRateAdj * 100).toFixed(2)}%`;
-
+    const payRateText = isTracker ? `${((base - deferredCap) * 100).toFixed(2)}% + BBR` : `${(payRateAdj * 100).toFixed(2)}%`;
     const pv = toNumber(propertyValue);
     const mr = toNumber(monthlyRent);
-
     const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
     const maxLTV = getMaxLTV(tier, flatAboveComm);
     const grossLTV = pv ? pv * maxLTV : Infinity;
-
     const stressRate = isTracker ? base + STRESS_BBR : displayRate;
     const termMonths = TERM_MONTHS[productType] ?? 24;
     const rolledMonths = Math.min(MAX_ROLLED_MONTHS, termMonths);
@@ -247,7 +203,7 @@ function App() {
 
     let grossRent = Infinity;
     if (mr && stressAdj) {
-      const annualRent = mr * 12; // Assuming annual rent for ICR calculation
+      const annualRent = mr * 12;
       grossRent = annualRent / (minICR * stressAdj);
     }
 
@@ -266,10 +222,8 @@ function App() {
     }
     const belowMin = eligibleGross < MIN_LOAN - 1e-6;
     const hitMaxCap = Math.abs(eligibleGross - MAX_LOAN) < 1e-6;
-
     const feeAmt = eligibleGross * feePct;
-    const rolled =
-      ((eligibleGross * (displayRate - deferredCap)) / 12) * rolledMonths;
+    const rolled = ((eligibleGross * (displayRate - deferredCap)) / 12) * rolledMonths;
     const deferred = ((eligibleGross * deferredCap) / 12) * termMonths;
     const net = eligibleGross - feeAmt - rolled - deferred;
     const ltv = pv ? eligibleGross / pv : null;
@@ -277,41 +231,24 @@ function App() {
 
     return {
       productName: `${productType}, ${tier}, ${Number(colKey)}% Fee`,
-      fullRateText,
-      payRateText,
-      deferredCapPct: deferredCap,
-      net,
-      gross: eligibleGross,
-      feeAmt,
-      rolled,
-      deferred,
-      ltv,
-      rolledMonths,
-      directDebit: ddAmount,
-      maxLtvRule: maxLTV,
-      termMonths,
-      belowMin,
-      hitMaxCap,
+      fullRateText, payRateText, deferredCapPct: deferredCap, net, gross: eligibleGross,
+      feeAmt, rolled, deferred, ltv, rolledMonths, directDebit: ddAmount,
+      maxLtvRule: maxLTV, termMonths, belowMin, hitMaxCap,
     };
   }
 
-  // "Basic Gross" per column: **no rolled months, no deferred interest**
   function computeBasicGrossForCol(colKey) {
     const base = selected?.[colKey];
     if (base == null) return null;
 
     const pv = toNumber(propertyValue);
     const mr = toNumber(monthlyRent);
-
     const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
     const maxLTV = getMaxLTV(tier, flatAboveComm);
     const grossLTV = pv ? pv * maxLTV : Infinity;
-
     const displayRate = isTracker ? base + STANDARD_BBR : base;
     const stressRate = isTracker ? base + STRESS_BBR : displayRate;
-
     const deferredCap = 0;
-    const monthsLeft = 12; // ICR is annual
     const stressAdj = Math.max(stressRate - deferredCap, 1e-6);
 
     let grossRent = Infinity;
@@ -323,183 +260,116 @@ function App() {
     const eligibleGross = Math.min(grossLTV, grossRent, MAX_LOAN);
     const ltvPct = pv ? Math.round((eligibleGross / pv) * 100) : null;
 
-    return {
-      grossBasic: eligibleGross,
-      ltvPctBasic: ltvPct,
-    };
+    return { grossBasic: eligibleGross, ltvPctBasic: ltvPct };
   }
 
-  // Best summary across the four columns (by gross)
   const bestSummary = useMemo(() => {
     if (!canShowMatrix) return null;
     const pv = toNumber(propertyValue) || 0;
-
-    const items = SHOW_FEE_COLS.map((k) => [k, computeForCol(k)]).filter(
-      ([, d]) => !!d
-    );
-
+    const items = SHOW_FEE_COLS.map((k) => [k, computeForCol(k)]).filter(([, d]) => !!d);
     if (!items.length) return null;
 
     let best = null;
     for (const [colKey, d] of items) {
       if (!best || d.gross > best.gross) {
         best = {
-          colKey,
-          gross: d.gross,
-          grossStr: fmtMoney0(d.gross),
+          colKey, gross: d.gross, grossStr: fmtMoney0(d.gross),
           grossLtvPct: pv ? Math.round((d.gross / pv) * 100) : 0,
-          net: d.net,
-          netStr: fmtMoney0(d.net),
+          net: d.net, netStr: fmtMoney0(d.net),
           netLtvPct: pv ? Math.round((d.net / pv) * 100) : 0,
         };
       }
     }
     return best;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    productType,
-    tier,
-    propertyValue,
-    monthlyRent,
-    useSpecificNet,
-    specificNetLoan,
-    flatAboveComm,
-    canShowMatrix,
+    productType, tier, propertyValue, monthlyRent, useSpecificNet,
+    specificNetLoan, flatAboveComm, canShowMatrix,
   ]);
 
-  /* --------------------------- Email via EmailJS ---------------------------- */
-  function buildEmailHtml(colData) {
-    const safe = (v) => (v == null ? "—" : v);
-
-    const inputsHtml = `
-      <h3 style="margin:0 0 6px">Client</h3>
-      <table cellspacing="0" cellpadding="6" style="border-collapse:collapse">
-        <tr><td><b>Name</b></td><td>${safe(clientName)}</td></tr>
-        <tr><td><b>Phone</b></td><td>${safe(clientPhone)}</td></tr>
-        <tr><td><b>Email</b></td><td>${safe(clientEmail)}</td></tr>
-      </table>
-      <h3 style="margin:16px 0 6px">Case Inputs</h3>
-      <table cellspacing="0" cellpadding="6" style="border-collapse:collapse">
-        <tr><td><b>Tier</b></td><td>${tier}</td></tr>
-        <tr><td><b>Product Type</b></td><td>${productType}</td></tr>
-        <tr><td><b>Property Value</b></td><td>${safe(propertyValue)}</td></tr>
-        <tr><td><b>Monthly Rent</b></td><td>${safe(monthlyRent)}</td></tr>
-        <tr><td><b>Specific Net Used</b></td><td>${useSpecificNet}</td></tr>
-        ${
-          useSpecificNet === "Yes"
-            ? `<tr><td><b>Specific Net</b></td><td>${safe(
-                specificNetLoan
-              )}</td></tr>`
-            : ""
-        }
-      </table>
-    `;
-
-    const colsHtml = colData
-      .map(([key, d]) => {
-        return `
-          <h4 style="margin:16px 0 6px">BTL, ${Number(key)}% Product Fee</h4>
-          <table cellspacing="0" cellpadding="6" style="border-collapse:collapse">
-            <tr><td><b>Product Name</b></td><td>${d.productName}</td></tr>
-            <tr><td><b>Full Rate</b></td><td>${d.fullRateText}</td></tr>
-            <tr><td><b>Pay Rate</b></td><td>${d.payRateText} (using ${(
-          d.deferredCapPct * 100
-        ).toFixed(2)}% deferred cap)</td></tr>
-            <tr><td><b>Net Loan</b></td><td>${fmtMoney0(d.net)}</td></tr>
-            <tr><td><b>Max Gross Loan</b></td><td>${fmtMoney0(
-              d.gross
-            )}</td></tr>
-            <tr><td><b>Product Fee</b></td><td>${fmtMoney0(d.feeAmt)} (${Number(
-          key
-        ).toFixed(2)}%)</td></tr>
-            <tr><td><b>Rolled Interest</b></td><td>${fmtMoney0(d.rolled)} (${
-          d.rolledMonths
-        } months)</td></tr>
-            <tr><td><b>Deferred Interest</b></td><td>${fmtMoney0(
-              d.deferred
-            )} (${(d.deferredCapPct * 100).toFixed(2)}%)</td></tr>
-            <tr><td><b>Direct Debit</b></td><td>${fmtMoney0(
-              d.directDebit
-            )} from month ${MAX_ROLLED_MONTHS + 1}</td></tr>
-            <tr><td><b>Revert Rate</b></td><td>${formatRevertRate(
-              tier
-            )}</td></tr>
-            <tr><td><b>Total term | ERC</b></td><td>${TOTAL_TERM} years | ${formatERC(
-          productType
-        )}</td></tr>
-            <tr><td><b>Max Product LTV</b></td><td>${(
-              d.maxLtvRule * 100
-            ).toFixed(0)}%</td></tr>
-          </table>
-        `;
-      })
-      .join("");
-
-    return `
-      <div style="font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial">
-        <h2 style="margin:0 0 8px">MFS BTL Residential – Illustration</h2>
-        <div style="font-size:13px;color:#334155;margin:0 0 12px">
-          Generated for <b>${clientName || "Client"}</b>
-        </div>
-        ${inputsHtml}
-        <h3 style="margin:16px 0 6px">Products</h3>
-        ${colsHtml}
-      </div>
-    `;
-  }
-
-  async function sendLeadEmail() {
-    if (!clientEmail) {
-      alert("Please enter the client’s email address.");
+  /* --------------------------- Send Quote via Zapier ---------------------------- */
+  const handleSendQuote = async () => {
+    if (!canShowMatrix || !bestSummary) {
+      alert("Please ensure the calculation is complete before sending.");
       return;
     }
-    if (!window.emailjs) {
-      alert(
-        'EmailJS script not found. Add it to index.html:\n<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>'
-      );
-      return;
-    }
+    setSending(true);
+
     try {
-      if (!window.__emailjs_inited) {
-        emailjs.init(EMAILJS_PUBLIC_KEY);
-        window.__emailjs_inited = true;
-      }
+      const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/uhbzcvu/";
 
-      const colData = SHOW_FEE_COLS.map((k) => [k, computeForCol(k)]).filter(
-        ([, d]) => !!d
-      );
+      const columnCalculations = SHOW_FEE_COLS
+        .map((k) => ({ feePercent: k, ...computeForCol(k) }))
+        .filter((d) => !!d.gross);
+      
+      const basicGrossCalculations = SHOW_FEE_COLS
+        .map((k) => computeBasicGrossForCol(k))
+        .filter(Boolean);
 
-      const html = buildEmailHtml(colData);
-
-      setSending(true);
-
-      const params = {
-        to_email: clientEmail,
-        cc_email: LEAD_TO,
-        from_name: clientName || "Client",
-        reply_to: clientEmail,
-        subject: `BTL illustration – ${productType} | ${tier}`,
-        message_html: html, // use {{message_html}} in your EmailJS template
+      const basePayload = {
+        requestId: `MFS-COMM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        clientName, clientPhone, clientEmail,
+        propertyValue, monthlyRent, productType, useSpecificNet, specificNetLoan,
+        hmo, mufb, holiday, flatAboveComm, ownerocc, devexit,
+        expat, ftl, offshore,
+        adverse, mortArrears, unsArrears, ccjDefault, bankruptcy,
+        tier,
+        submissionTimestamp: new Date().toISOString(),
+        revertRate: formatRevertRate(tier),
+        totalTerm: `${TOTAL_TERM} years`,
+        erc: formatERC(productType),
+        currentMvr: CURRENT_MVR,
+        standardBbr: STANDARD_BBR,
       };
 
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
+      const flatPayload = { ...basePayload };
+      
+      for (const key in bestSummary) {
+        flatPayload[`bestSummary${key.charAt(0).toUpperCase() + key.slice(1)}`] = bestSummary[key];
+      }
 
-      alert("Email sent successfully 🎉");
-    } catch (err) {
-      console.error(err);
-      alert(
-        "Email failed to send. Please check your EmailJS IDs and template."
-      );
+      columnCalculations.forEach((col, index) => {
+        for (const key in col) {
+          flatPayload[`allColumnData${key.charAt(0).toUpperCase() + key.slice(1)}_${index}`] = col[key];
+        }
+      });
+      
+      basicGrossCalculations.forEach((col, index) => {
+        for (const key in col) {
+          flatPayload[`basicGrossColumnData${key.charAt(0).toUpperCase() + key.slice(1)}_${index}`] = col[key];
+        }
+      });
+      
+      const form = new URLSearchParams();
+      for (const [k, v] of Object.entries(flatPayload)) {
+        form.append(k, v);
+      }
+
+      const res = await fetch(zapierWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: form.toString(),
+      });
+
+      if (res.ok) {
+        alert("Quote sent successfully!");
+      } else {
+        const errorText = await res.text();
+        console.error("Failed to send quote:", errorText);
+        alert("Failed to send quote. Please check the console for details.");
+      }
+    } catch (e) {
+      console.error("Error sending quote:", e);
+      alert("An error occurred while sending the quote. Please check the console.");
     } finally {
       setSending(false);
     }
-  }
+  };
 
   /* --------------------------- Inline value styles -------------------------- */
   const valueBoxStyle = {
     width: "100%",
     textAlign: "center",
-    fontWeight: 400, // values NOT bold
+    fontWeight: 400,
     background: "#e2e8f0",
     borderRadius: 8,
     padding: "8px 10px",
@@ -507,9 +377,8 @@ function App() {
 
   return (
     <div className="container">
-      {/* --------------------- Property Details (full width) -------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1" }}>
-        <h3>MFS BTL Commercial Calculator</h3>
+        <h3>MFS BTL Semi / Full Commercial Calculator</h3>
         <div className="note" style={{ marginBottom: 8 }}>
           Tier is calculated automatically from the inputs below. Current:{" "}
           <b>{tier}</b>
@@ -705,7 +574,6 @@ function App() {
                 value={productType}
                 onChange={(e) => setProductType(e.target.value)}
               >
-                {/* Fallback array if window.PRODUCT_TYPES_Commercial is not defined */}
                 {(
                   window.PRODUCT_TYPES_Commercial || [
                     "2yr Fix",
@@ -723,7 +591,6 @@ function App() {
         </div>
       </div>
 
-      {/* ---------------------- Client Details & Lead (full) --------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1" }}>
         <h3>Client Details & Lead</h3>
         <div className="profile-grid">
@@ -759,18 +626,17 @@ function App() {
 
           <div className="field" style={{ alignSelf: "end" }}>
             <button
-              onClick={sendLeadEmail}
+              onClick={handleSendQuote}
               className="primaryBtn"
-              disabled={sending}
+              disabled={sending || !canShowMatrix}
             >
-              {sending ? "Sending…" : "Send Email"}
+              {sending ? "Sending…" : "Send Quote via Email"}
             </button>
             <div className="note"></div>
           </div>
         </div>
       </div>
 
-      {/* ===== Maximum Loan Summary (below Client Details) ===== */}
       {canShowMatrix && bestSummary && (
         <div
           className="card"
@@ -833,7 +699,6 @@ function App() {
         </div>
       )}
 
-      {/* ----------------------- OUTPUT MATRIX (labels + 4 cols) ---------------- */}
       {canShowMatrix && (
         <div className="card" style={{ gridColumn: "1 / -1" }}>
           <div className="matrix">
@@ -868,7 +733,6 @@ function App() {
                     </div>
                   )}
 
-                  {/* Labels */}
                   <div
                     className="matrixLabels"
                     style={{
@@ -881,58 +745,27 @@ function App() {
                     }}
                   >
                     <div className="labelsHead"></div>
+                    <div className="mRow"><b>Product Name</b></div>
+                    <div className="mRow"><b>Full Rate</b></div>
+                    <div className="mRow"><b>Pay Rate</b></div>
                     <div className="mRow">
-                      <b>Product Name</b>
+                      <b>Net Loan <span style={{ fontSize: "11px", fontWeight: 400 }}>(advanced day 1)</span></b>
                     </div>
                     <div className="mRow">
-                      <b>Full Rate</b>
+                      <b>Max Gross Loan <span style={{ fontSize: "11px", fontWeight: 400 }}>(paid at redemption)</span></b>
                     </div>
-                    <div className="mRow">
-                      <b>Pay Rate</b>
-                    </div>
-                    <div className="mRow">
-                      <b>
-                        Net Loan <span style={{ fontSize: "11px", fontWeight: 400 }}>(advanced day 1)</span>
-                      </b>
-                    </div>
-                    <div className="mRow">
-                      <b>
-                        Max Gross Loan <span style={{ fontSize: "11px", fontWeight: 400 }}>(paid at redemption)</span>
-                      </b>
-                    </div>
-                    <div className="mRow">
-                      <b>Product Fee</b>
-                    </div>
-                    <div className="mRow">
-                      <b>Rolled Months Interest</b>
-                    </div>
-                    <div className="mRow">
-                      <b>Deferred Interest</b>
-                    </div>
-                    <div className="mRow">
-                      <b>Direct Debit</b>
-                    </div>
-                    <div className="mRow">
-                      <b>Revert Rate</b>
-                    </div>
-                    <div className="mRow">
-                      <b>Total Term | ERC</b>
-                    </div>
-                    <div className="mRow">
-                      <b>Max Product LTV</b>
-                    </div>
+                    <div className="mRow"><b>Product Fee</b></div>
+                    <div className="mRow"><b>Rolled Months Interest</b></div>
+                    <div className="mRow"><b>Deferred Interest</b></div>
+                    <div className="mRow"><b>Direct Debit</b></div>
+                    <div className="mRow"><b>Revert Rate</b></div>
+                    <div className="mRow"><b>Total Term | ERC</b></div>
+                    <div className="mRow"><b>Max Product LTV</b></div>
                   </div>
 
-                  {/* Columns */}
                   {colData.map(([colKey, data], idx) => {
                     const headClass =
-                      idx === 0
-                        ? "headGreen"
-                        : idx === 1
-                        ? "headOrange"
-                        : idx === 2
-                        ? "headTeal"
-                        : "headBlue";
+                      idx === 0 ? "headGreen" : idx === 1 ? "headOrange" : "headBlue";
 
                     return (
                       <div
@@ -951,36 +784,17 @@ function App() {
                           BTL, {Number(colKey)}% Product Fee
                         </div>
 
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {data.productName}
-                          </div>
-                        </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {data.fullRateText}
-                          </div>
-                        </div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{data.productName}</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{data.fullRateText}</div></div>
                         <div className="mRow">
                           <div className="mValue" style={valueBoxStyle}>
                             {data.payRateText}
-                            <span
-                              style={{
-                                fontWeight: 500,
-                                fontSize: 10,
-                                marginLeft: 6,
-                              }}
-                            >
-                              (using {(data.deferredCapPct * 100).toFixed(2)}%
-                              deferred cap)
+                            <span style={{fontWeight: 500, fontSize: 10, marginLeft: 6,}}>
+                              (using {(data.deferredCapPct * 100).toFixed(2)}% deferred cap)
                             </span>
                           </div>
                         </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {fmtMoney0(data.net)}
-                          </div>
-                        </div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.net)}</div></div>
                         <div className="mRow">
                           <div className="mValue" style={valueBoxStyle}>
                             <span style={{ fontWeight: 700 }}>{fmtMoney0(data.gross)}</span>
@@ -991,45 +805,13 @@ function App() {
                             )}
                           </div>
                         </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {fmtMoney0(data.feeAmt)} (
-                            {Number(colKey).toFixed(2)}%)
-                          </div>
-                        </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {fmtMoney0(data.rolled)} ({data.rolledMonths}{" "}
-                            months)
-                          </div>
-                        </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {fmtMoney0(data.deferred)} (
-                            {(data.deferredCapPct * 100).toFixed(2)}%)
-                          </div>
-                        </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {fmtMoney0(data.directDebit)} from month{" "}
-                            {MAX_ROLLED_MONTHS + 1}
-                          </div>
-                        </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {formatRevertRate(tier)}
-                          </div>
-                        </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {TOTAL_TERM} years | {formatERC(productType)}
-                          </div>
-                        </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {(data.maxLtvRule * 100).toFixed(0)}%
-                          </div>
-                        </div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.feeAmt)} ({Number(colKey).toFixed(2)}%)</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.rolled)} ({data.rolledMonths}{" "}months)</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.deferred)} ({(data.deferredCapPct * 100).toFixed(2)}%)</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.directDebit)} from month{" "}{MAX_ROLLED_MONTHS + 1}</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{formatRevertRate(tier)}</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{TOTAL_TERM} years | {formatERC(productType)}</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{(data.maxLtvRule * 100).toFixed(0)}%</div></div>
                       </div>
                     );
                   })}
@@ -1040,10 +822,8 @@ function App() {
         </div>
       )}
 
-      {/* ------------- EXTRA: Basic Gross (aligned under columns) + MVR/BBR ---- */}
       {canShowMatrix && (
         <div className="card" style={{ gridColumn: "1 / -1" }}>
-          {/* advisory line */}
           <div
             style={{
               textAlign: "center",
@@ -1062,9 +842,7 @@ function App() {
             the net loan on day 1).
           </div>
 
-          {/* Use the SAME .matrix grid so columns line up perfectly */}
           <div className="matrix" style={{ rowGap: 0 }}>
-            {/* labels spacer column (same width as above: 200px) */}
             <div
               className="matrixLabels"
               style={{
@@ -1074,27 +852,14 @@ function App() {
                 background: "transparent",
               }}
             >
-              <div
-                className="mRow"
-                style={{ justifyContent: "center", color: "#475569" }}
-              >
+              <div className="mRow" style={{ justifyContent: "center", color: "#475569" }}>
                 <b>Basic Gross (no roll/deferred)</b>
               </div>
             </div>
 
-            {/* one aligned row per product column */}
             {SHOW_FEE_COLS.map((k, idx) => {
               const d = computeBasicGrossForCol(k);
               if (!d) return null;
-
-              const headClass =
-                idx === 0
-                  ? "headGreen"
-                  : idx === 1
-                  ? "headOrange"
-                  : idx === 2
-                  ? "headTeal"
-                  : "headBlue";
 
               return (
                 <div
@@ -1130,7 +895,6 @@ function App() {
               );
             })}
 
-            {/* Footer line under the aligned row */}
             <div
               style={{
                 gridColumn: "1 / -1",
