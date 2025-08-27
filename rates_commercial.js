@@ -1,44 +1,31 @@
-// --- Rates (string keys for 6/4/3/2 columns) ---
+// --- Rates (string keys for 6/4/2 columns) ---
+// Updated based on the "Commercial Rates" image provided.
 window.RATES_Commercial = {
   "Tier 1": {
     products: {
-      "2yr Fix": { 6: 0.0589, 4: 0.0679, 3: 0.0739, 2: 0.0789 },
-      "3yr Fix": { 6: 0.0639, 4: 0.0709, 3: 0.0746, 2: 0.0779 },
+      "3yr Fix": { 6: 0.0719, 4: 0.0789, 2: 0.0859 },
+      "2yr Fix": { 6: 0.0659, 4: 0.0749, 2: 0.0859 },
       "2yr Tracker": {
-        6: 0.0159,
-        4: 0.0259,
-        3: 0.0314,
-        2: 0.0364,
+        6: 0.0269,
+        4: 0.0369,
+        2: 0.0474,
         isMargin: true,
       },
     },
   },
   "Tier 2": {
     products: {
-      "2yr Fix": { 6: 0.0639, 4: 0.0729, 3: 0.0789, 2: 0.0839 },
-      "3yr Fix": { 6: 0.0689, 4: 0.0759, 3: 0.0796, 2: 0.0829 },
+      "3yr Fix": { 6: 0.0749, 4: 0.0819, 2: 0.0889 },
+      "2yr Fix": { 6: 0.0699, 4: 0.0789, 2: 0.0899 },
       "2yr Tracker": {
-        6: 0.0209,
-        4: 0.0309,
-        3: 0.0364,
-        2: 0.0414,
+        6: 0.0319,
+        4: 0.0419,
+        2: 0.0524,
         isMargin: true,
       },
     },
   },
-  "Tier 3": {
-    products: {
-      "2yr Fix": { 6: 0.0679, 4: 0.0769, 3: 0.0829, 2: 0.0879 },
-      "3yr Fix": { 6: 0.0729, 4: 0.0799, 3: 0.0836, 2: 0.0869 },
-      "2yr Tracker": {
-        6: 0.0239,
-        4: 0.0339,
-        3: 0.0394,
-        2: 0.0444,
-        isMargin: true,
-      },
-    },
-  },
+  
 };
 
 window.PRODUCT_TYPES_Commercial = ["2yr Fix", "3yr Fix", "2yr Tracker"];
