@@ -529,40 +529,71 @@ function App() {
       return;
     }
 
-    const emailData = {
-      clientName,
-      contactNumber,
-      emailAddress,
-      chargeType,
-      propertyType,
-      loanProduct,
-      propertyValue: propertyValue,
-      loanAmount:
-        useSpecificNetLoan === "Yes"
-          ? calculationResults.fixedGrossLoan
-          : loanAmount,
-      loanTerm,
-      rolledMonths,
-      fixedResults: calculationResults.fixed,
-      variableResults: calculationResults.variable,
-      arrangementFeeRate: window.ARRANGEMENT_FEE_Bridges,
-      standardBBR: window.STANDARD_BBR_Bridges,
-    };
-
     setIsSending(true);
     setSendStatus(null);
     try {
-      const response = await fetch("send-email.php", {
+      // NOTE: Replace with your actual Zapier Webhook URL
+      const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/uh3tokb/"; 
+
+      const basePayload = {
+        requestId: `MFS-BRIDGE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        submissionTimestamp: new Date().toISOString(),
+        clientName,
+        contactNumber,
+        emailAddress,
+        chargeType,
+        propertyType,
+        loanProduct,
+        propertyValue: propertyValue,
+        loanAmount:
+          useSpecificNetLoan === "Yes"
+            ? calculationResults.fixedGrossLoan
+            : loanAmount,
+        useSpecificNetLoan,
+        specificNetLoan:
+          useSpecificNetLoan === "Yes" ? specificNetLoan : "N/A",
+        loanTerm,
+        rolledMonths,
+        arrangementFeeRate: window.ARRANGEMENT_FEE_Bridges,
+        standardBBR: window.STANDARD_BBR_Bridges,
+      };
+
+      const flatPayload = { ...basePayload };
+
+      // Flatten fixed results with a 'fixed_' prefix
+      for (const key in calculationResults.fixed) {
+        flatPayload[`fixed_${key}`] = calculationResults.fixed[key];
+      }
+
+      // Flatten variable results with a 'variable_' prefix
+      for (const key in calculationResults.variable) {
+        flatPayload[`variable_${key}`] = calculationResults.variable[key];
+      }
+      
+      const form = new URLSearchParams();
+      for (const [k, v] of Object.entries(flatPayload)) {
+        // Handle null/undefined values to avoid them being sent as "null" string
+        form.append(k, v !== null && v !== undefined ? v : "");
+      }
+      
+      const response = await fetch(zapierWebhookUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(emailData),
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: form.toString(),
       });
+
       setSendStatus(response.ok ? "success" : "error");
-      if (!response.ok)
-        console.error("Email sending failed with status:", response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to send quote via Zapier:", errorText);
+        alert("Failed to send quote. Please check the console for details.");
+      }
     } catch (err) {
       setSendStatus("error");
-      console.error("Error sending email:", err);
+      console.error("Error sending quote via Zapier:", err);
+      alert(
+        "An error occurred while sending the quote. Please check the console."
+      );
     } finally {
       setIsSending(false);
     }
@@ -717,7 +748,7 @@ function App() {
               <button
                 onClick={handleEmail}
                 disabled={isSending}
-                className={`flex items-center space-x-2 px-6 py-3 font-semibold rounded-lg shadow-md transition-transform transform hover:scale-105 ${
+                className={`flex items-center space-x-2 px-6 py-3 font-semibold rounded-lg shadow-md transition-transform transform hover:scale-105 text-white ${
                   isSending
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"

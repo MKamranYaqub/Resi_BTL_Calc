@@ -71,6 +71,7 @@ function App() {
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState(null); // null | 'success' | 'error'
 
   // Property & income
   const [propertyValue, setPropertyValue] = useState("");
@@ -293,6 +294,7 @@ function App() {
       return;
     }
     setSending(true);
+    setSendStatus(null); // Reset status on new attempt
 
     try {
       const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/uhbzcvu/";
@@ -351,15 +353,15 @@ function App() {
       });
 
       if (res.ok) {
-        alert("Quote sent successfully!");
+        setSendStatus("success");
       } else {
         const errorText = await res.text();
         console.error("Failed to send quote:", errorText);
-        alert("Failed to send quote. Please check the console for details.");
+        setSendStatus("error");
       }
     } catch (e) {
       console.error("Error sending quote:", e);
-      alert("An error occurred while sending the quote. Please check the console.");
+      setSendStatus("error");
     } finally {
       setSending(false);
     }
@@ -635,6 +637,16 @@ function App() {
             <div className="note"></div>
           </div>
         </div>
+        {sendStatus === "success" && (
+          <div style={{ marginTop: "16px", padding: "16px", background: "#f0fdf4", border: "1px solid #4ade80", color: "#166534", borderRadius: "8px" }}>
+            Email sent successfully!
+          </div>
+        )}
+        {sendStatus === "error" && (
+          <div style={{ marginTop: "16px", padding: "16px", background: "#fff1f2", border: "1px solid #f87171", color: "#b91c1c", borderRadius: "8px" }}>
+            Failed to send email. Please try again later.
+          </div>
+        )}
       </div>
 
       {canShowMatrix && bestSummary && (

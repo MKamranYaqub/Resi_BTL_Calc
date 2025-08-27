@@ -69,6 +69,7 @@ function App() {
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState(null); // Add this line
 
   // Property & income
   const [propertyValue, setPropertyValue] = useState("");
@@ -291,117 +292,83 @@ function App() {
 
   /* --------------------------- Send Quote via Email --------------------------- */
   const handleSendQuote = async () => {
-    setSending(true);
-
     if (!canShowMatrix || !bestSummary) {
       alert("Please ensure the calculation is complete before sending.");
-      setSending(false);
       return;
     }
 
-    // --- IMPORTANT: Replace with your actual Zapier Webhook URL ---
-    const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/utp5b85/";
+    setSending(true);
+    setSendStatus(null);
 
-    // Gather all column data for a detailed payload
-    const columnCalculations = SHOW_FEE_COLS
-      .map((k) => ({ feePercent: k, ...computeForCol(k) }))
-      .filter((d) => !!d.gross);
+    try {
+      // --- IMPORTANT: Replace with your actual Zapier Webhook URL ---
+      const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/utp5b85/";
 
-    const payload = {
-      // Unique Request ID
-      requestId: `MFS-PRIME-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      // Client Details
-      clientName, clientPhone, clientEmail,
+      const columnCalculations = SHOW_FEE_COLS
+        .map((k) => ({ feePercent: k, ...computeForCol(k) }))
+        .filter((d) => !!d.gross);
 
-      // Property & Product Inputs
-      propertyValue,
-      monthlyRent,
-      productType,
-      useSpecificNet,
-      specificNetLoan,
+      const payload = {
+        requestId: `MFS-PRIME-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        clientName, clientPhone, clientEmail,
+        propertyValue, monthlyRent, productType, useSpecificNet, specificNetLoan,
+        hmo, mufb, holiday, devExit,
+        expat, ftl, ftb,
+        adverse, mortArrears, unsArrears, ccjDefault, bankruptcy,
+        tier,
+        bestSummary,
+        allColumnData: columnCalculations,
+        submissionTimestamp: new Date().toISOString(),
+        revertRate: formatRevertRate(tier),
+        totalTerm: `${TOTAL_TERM} years`,
+        erc: formatERC(productType),
+        currentMvr: CURRENT_MVR,
+        standardBbr: STANDARD_BBR,
+      };
 
-      // Property Drivers
-      hmo,
-      mufb,
-      holiday,
-      devExit,
-
-      // Applicant Drivers
-      expat,
-      ftl,
-      ftb,
-
-      // Adverse Credit Inputs
-      adverse,
-      mortArrears,
-      unsArrears,
-      ccjDefault,
-      bankruptcy,
-
-      // Key Calculated Outputs
-      tier,
-      bestSummary,
-      allColumnData: columnCalculations, // Send data for all valid columns
+      let success = false;
       
-      // Timestamp
-      submissionTimestamp: new Date().toISOString(),
-      // --- ADD THESE NEW FIELDS ---
-  revertRate: formatRevertRate(tier),
-  totalTerm: `${TOTAL_TERM} years`,
-  erc: formatERC(productType),
-  currentMvr: CURRENT_MVR,
-  standardBbr: STANDARD_BBR,
-    };
-
-    // Helper to read response body even on errors
-    const readText = async (res) => { try { return await res.text(); } catch { return "<no body>"; } };
-
-    try {
       // --- 1) TRY JSON POST (Primary Method) ---
-      const res = await fetch(zapierWebhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const t = await readText(res);
-      console.log("[Quote Send JSON] status:", res.status, "ok:", res.ok, "body:", t);
-
-      if (res.ok) {
-        alert("Quote sent successfully!");
-        setSending(false);
-        return;
+      try {
+        const res = await fetch(zapierWebhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) success = true;
+      } catch (e) {
+        console.warn("JSON POST failed (expected in browser due to CORS):", e);
       }
-    } catch (e) {
-      console.warn("JSON POST failed (expected in browser due to CORS):", e);
+
+      // --- 2) FALLBACK: Form-encoded POST ---
+      if (!success) {
+        try {
+          const form = new URLSearchParams();
+          for (const [k, v] of Object.entries(payload)) {
+            form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v ?? ""));
+          }
+          const res2 = await fetch(zapierWebhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+            body: form.toString(),
+          });
+          if (res2.ok) success = true;
+        } catch (e2) {
+          console.warn("Form-encoded POST failed:", e2);
+        }
+      }
+
+      if (success) {
+        setSendStatus("success");
+      } else {
+        setSendStatus("error");
+      }
+    } catch (error) {
+      console.error("An unexpected error occurred in handleSendQuote:", error);
+      setSendStatus("error");
+    } finally {
+      setSending(false);
     }
-
-    try {
-      // --- 2) FALLBACK: Form-encoded POST (to bypass CORS preflight) ---
-      const form = new URLSearchParams();
-      for (const [k, v] of Object.entries(payload)) {
-        form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v ?? ""));
-      }
-
-      const res2 = await fetch(zapierWebhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: form.toString(),
-      });
-      const t2 = await readText(res2);
-      console.log("[Quote Send FORM] status:", res2.status, "ok:", res2.ok, "body:", t2);
-
-      if (res2.ok) {
-        alert("Quote sent successfully!");
-        setSending(false);
-        return;
-      }
-    } catch (e2) {
-      console.warn("Form-encoded POST failed:", e2);
-    }
-
-    // If both methods fail
-    alert("Failed to send quote. Please check the console for more details.");
-    setSending(false);
   };
 
   /* --------------------------- Inline value styles -------------------------- */
@@ -679,6 +646,16 @@ function App() {
             <div className="note"></div>
           </div>
         </div>
+        {sendStatus === "success" && (
+          <div style={{ marginTop: "16px", padding: "16px", background: "#f0fdf4", border: "1px solid #4ade80", color: "#166534", borderRadius: "8px" }}>
+            Email sent successfully!
+          </div>
+        )}
+        {sendStatus === "error" && (
+          <div style={{ marginTop: "16px", padding: "16px", background: "#fff1f2", border: "1px solid #f87171", color: "#b91c1c", borderRadius: "8px" }}>
+            Failed to send email. Please try again later.
+          </div>
+        )}
       </div>
 
       {/* ===== Maximum Loan Summary (below Client Details) ===== */}
