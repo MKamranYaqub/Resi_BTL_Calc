@@ -190,6 +190,13 @@ const handleSendToZapier = async () => {
     return;
   }
 
+  // **FIX: Added validation for client name and email**
+  if (!clientName || !clientEmail) {
+    alert("Please fill in the Client Name and Client Email before sending.");
+    setSending(false); // Reset the button state
+    return; // Stop the function from proceeding
+  }
+
   const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/utq78nr/";
 
   const payload = {
