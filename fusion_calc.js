@@ -147,7 +147,7 @@ function App() {
 
     // --- 4. Success - Calculate Remaining Details ---
     const arrangementFee = grossLoan * ARRANGEMENT_FEE_PCT;
-    const rolledCost = (grossLoan * (couponRate - di) / 12) * rm;
+    const rolledCost = (grossLoan * (couponRate+BBR - di) / 12) * rm;
     const fullRate = couponRate + BBR;
     const payRate = (couponRate - di) + BBR;
      const payRatetodispaly = (couponRate - di);
