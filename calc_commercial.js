@@ -204,8 +204,8 @@ function App() {
 
     let grossRent = Infinity;
     if (mr && stressAdj) {
-      const annualRent = mr * 12;
-      grossRent = annualRent / (minICR * stressAdj);
+      const annualRent = mr * termMonths;
+      grossRent = annualRent / (minICR * (stressAdj / 12) * monthsLeft);
     }
 
     const N_input = toNumber(specificNetLoan);
