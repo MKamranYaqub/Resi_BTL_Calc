@@ -618,7 +618,7 @@ function App() {
             Bridging Calculator
           </h1>
           <p className="text-sm text-gray-600">
-            A tool for estimating bridging loan costs.
+            
           </p>
         </div>
 
