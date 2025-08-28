@@ -99,6 +99,7 @@ const SelectField = ({
     )}
   </div>
 );
+
 const PillHeader = ({ children, className = "" }) => (
   <div
     className={
@@ -124,6 +125,7 @@ const ResultRow = ({ label, fixed, variable }) => (
     </div>
   </div>
 );
+
 // The main application component for the Bridging Calculator.
 function App() {
   const { useState, useMemo, useEffect } = React;
@@ -140,6 +142,16 @@ function App() {
   const [isValid, setIsValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [loanProduct, setLoanProduct] = useState(null);
+
+  // NEW: First Charge state (masked display + numeric)
+  const [firstCharge, setFirstCharge] = useState(0);
+  const [firstChargeDisplay, setFirstChargeDisplay] = useState("");
+  const handleFirstChargeChange = (e) => {
+    const raw = e.target.value.replace(/[^\d]/g, "");
+    const num = raw ? parseInt(raw, 10) : 0;
+    setFirstCharge(num);
+    setFirstChargeDisplay(raw ? "£" + num.toLocaleString("en-GB") : "");
+  };
 
   // Email fields
   const [clientName, setClientName] = useState("");
@@ -197,7 +209,14 @@ function App() {
     }
   }, [chargeType, propertyType]);
 
-  // Product limits (for helper display)
+  // If switching back to First Charge, clear First Charge value/display
+  useEffect(() => {
+    if (chargeType === "First Charge") {
+      setFirstCharge(0);
+      setFirstChargeDisplay("");
+    }
+  }, [chargeType]);
+
   // Product limits (for helper display)
   const productLimits = useMemo(() => {
     if (!loanProduct) return null;
@@ -213,12 +232,15 @@ function App() {
     for (const tier of ltvTiers) {
       if (productRates[tier] != null) {
         if (minLTV === null) minLTV = tier; // first supported tier encountered
-        maxLTV = tier; // keep overwriting -> ends as highest supported
+        maxLTV = tier; // keep overwriting -> highest supported
       }
     }
 
     return { loanSizeLimits, minLTV, maxLTV };
   }, [loanProduct]);
+
+  // Effective first-charge amount (only used when chargeType !== "First Charge")
+  const effectiveFirstCharge = chargeType === "First Charge" ? 0 : firstCharge;
 
   // ---------- Back-calc helper: Specific Net -> Gross (tier-aware) ----------
   const backCalcGrossFromNet = (
@@ -227,7 +249,8 @@ function App() {
     rolled,
     value,
     loanProduct,
-    arrangementFeeRate
+    arrangementFeeRate,
+    firstChargeForCalc
   ) => {
     if (!(netLoan > 0) || !(value > 0)) return null;
     const productRates = window.RATES_Bridges?.[loanType]?.[loanProduct];
@@ -244,7 +267,7 @@ function App() {
       const deduction = arrangementFeeRate + monthly * rolled;
       if (deduction >= 1) continue; // invalid inputs guard
       const gross = netLoan / (1 - deduction);
-      const ltv = gross / value;
+      const ltv = (gross + firstChargeForCalc) / value; // include First Charge when applicable
       const cap = parseInt(label, 10) / 100;
       if (ltv <= cap + 1e-10) return { gross, ltv, monthly };
     }
@@ -371,7 +394,8 @@ function App() {
         rolled,
         value,
         loanProduct,
-        arrangementFeeRate
+        arrangementFeeRate,
+        effectiveFirstCharge
       );
       const backVar = backCalcGrossFromNet(
         "Variable Rate",
@@ -379,7 +403,8 @@ function App() {
         rolled,
         value,
         loanProduct,
-        arrangementFeeRate
+        arrangementFeeRate,
+        effectiveFirstCharge
       );
       if (!backFix || !backVar) {
         setIsValid(false);
@@ -395,8 +420,9 @@ function App() {
     } else {
       grossLoanFixed = parseFloat(loanAmount);
       grossLoanVariable = parseFloat(loanAmount);
-      ltvFixed = grossLoanFixed / value;
-      ltvVariable = grossLoanVariable / value;
+      // Include First Charge (only when applicable)
+      ltvFixed = (grossLoanFixed + effectiveFirstCharge) / value;
+      ltvVariable = (grossLoanVariable + effectiveFirstCharge) / value;
       if (!(grossLoanFixed > 0) || !(grossLoanVariable > 0)) {
         setIsValid(false);
         setErrorMessage("Please enter a valid positive number for Gross Loan.");
@@ -492,6 +518,7 @@ function App() {
     loanProduct,
     useSpecificNetLoan,
     specificNetLoan,
+    effectiveFirstCharge, // recompute when charge type or first charge changes
   ]);
 
   const displayResults =
@@ -518,7 +545,7 @@ function App() {
     return options;
   }, [loanTerm]);
 
-  // Email handler
+  // Email handler (unchanged except for earlier payload inclusion)
   const handleEmail = async () => {
     if (!calculationResults || !isValid) {
       alert("Please ensure all inputs are valid before sending the email.");
@@ -533,10 +560,13 @@ function App() {
     setSendStatus(null);
     try {
       // NOTE: Replace with your actual Zapier Webhook URL
-      const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/uh3tokb/"; 
+      const zapierWebhookUrl =
+        "https://hooks.zapier.com/hooks/catch/10082441/uh3tokb/";
 
       const basePayload = {
-        requestId: `MFS-BRIDGE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        requestId: `MFS-BRIDGE-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`,
         submissionTimestamp: new Date().toISOString(),
         clientName,
         contactNumber,
@@ -550,12 +580,12 @@ function App() {
             ? calculationResults.fixedGrossLoan
             : loanAmount,
         useSpecificNetLoan,
-        specificNetLoan:
-          useSpecificNetLoan === "Yes" ? specificNetLoan : "N/A",
+        specificNetLoan: useSpecificNetLoan === "Yes" ? specificNetLoan : "N/A",
         loanTerm,
         rolledMonths,
         arrangementFeeRate: window.ARRANGEMENT_FEE_Bridges,
         standardBBR: window.STANDARD_BBR_Bridges,
+        firstCharge: effectiveFirstCharge,
       };
 
       const flatPayload = { ...basePayload };
@@ -569,16 +599,17 @@ function App() {
       for (const key in calculationResults.variable) {
         flatPayload[`variable_${key}`] = calculationResults.variable[key];
       }
-      
+
       const form = new URLSearchParams();
       for (const [k, v] of Object.entries(flatPayload)) {
-        // Handle null/undefined values to avoid them being sent as "null" string
         form.append(k, v !== null && v !== undefined ? v : "");
       }
-      
+
       const response = await fetch(zapierWebhookUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
         body: form.toString(),
       });
 
@@ -617,9 +648,7 @@ function App() {
           <h1 className="text-2xl font-bold text-gray-800">
             Bridging Calculator
           </h1>
-          <p className="text-sm text-gray-600">
-            
-          </p>
+          <p className="text-sm text-gray-600"></p>
         </div>
 
         {/* Inputs */}
@@ -660,9 +689,6 @@ function App() {
                   <div className="flex-1 text-center">
                     <span className="font-semibold block">Max LTV:</span>
                     {productLimits.maxLTV ?? "N/A"}
-                    {/* If you want to show the range, use:
-        <span>{productLimits.minLTV ?? "N/A"} – {productLimits.maxLTV ?? "N/A"}</span>
-      */}
                   </div>
                 </div>
               )}
@@ -688,11 +714,29 @@ function App() {
               value={propertyValue}
               onChange={(e) => setPropertyValue(e.target.value)}
             />
+
+            {/* First Charge (£) — visible only when Charge Type is NOT First Charge */}
+            {chargeType !== "First Charge" && (
+              <div className="flex flex-col">
+                <label className="text-sm text-gray-700 font-semibold mb-1">
+                  First Charge (£)
+                </label>
+                <input
+                  type="text"
+                  value={firstChargeDisplay}
+                  onChange={handleFirstChargeChange}
+                  placeholder="£200,000"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 bg-red-50"
+                />
+              </div>
+            )}
+
             <SelectField
               label="Use Specific Net Loan?"
               value={useSpecificNetLoan}
               onChange={(e) => setUseSpecificNetLoan(e.target.value)}
               options={["No", "Yes"]}
+              disabled={chargeType === "Second Charge"}
             />
 
             <InputField
