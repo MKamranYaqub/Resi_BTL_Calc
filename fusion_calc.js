@@ -33,6 +33,7 @@ function App() {
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [sending, setSending] = useState(false);
+  const [emailStatus, setEmailStatus] = useState(null); // 'success', 'error', or null
 
   // Constants from rates file
   const BBR = window.FUSION_BBR || 0.04;
@@ -40,8 +41,8 @@ function App() {
   const TERM_MONTHS = window.FUSION_TERM_MONTHS || 24;
   const ERC_DETAILS = window.FUSION_ERC || "N/A";
   const LTV_CAPS = window.FUSION_LTV_CAPS || {
-      'Residential': 0.75,
-      'Semi / Full Commercial': 0.70
+    'Residential': 0.75,
+    'Semi / Full Commercial': 0.70
   };
   const PRODUCTS = window.FUSION_PRODUCTS || {};
   const MIN_LOAN_AMOUNT = 100000;
@@ -61,10 +62,10 @@ function App() {
         return null;
     }
     if (useSpecificNet === "No" && !gl) {
-         setErrorMessage(`Please enter a valid Gross Loan amount. The minimum is ${fmtMoney0(MIN_LOAN_AMOUNT)}.`);
+        setErrorMessage(`Please enter a valid Gross Loan amount. The minimum is ${fmtMoney0(MIN_LOAN_AMOUNT)}.`);
         return null;
     }
-     if (useSpecificNet === "Yes" && (!snl || snl <= 0)) {
+      if (useSpecificNet === "Yes" && (!snl || snl <= 0)) {
         setErrorMessage("Please enter a valid Specific Net Loan amount.");
         return null;
     }
@@ -150,7 +151,7 @@ function App() {
     const rolledCost = (grossLoan * (couponRate+BBR - di) / 12) * rm;
     const fullRate = couponRate + BBR;
     const payRate = (couponRate - di) + BBR;
-     const payRatetodispaly = (couponRate - di);
+      const payRatetodispaly = (couponRate - di);
     const deferredCost = (grossLoan * di / 12) * TERM_MONTHS;
     const netLoan = grossLoan - arrangementFee - rolledCost - deferredCost;
     const totalInterest = (grossLoan * fullRate / 12) * TERM_MONTHS;
@@ -181,6 +182,7 @@ function App() {
   
 const handleSendToZapier = async () => {
   setSending(true);
+  setEmailStatus(null); // Reset status on each send attempt
 
   if (!calculation) {
     alert("Please ensure the calculation is complete before sending.");
@@ -200,70 +202,27 @@ const handleSendToZapier = async () => {
     submissionTimestamp: new Date().toISOString(),
   };
 
-  // Helper: read body even on errors (for logging)
-  const readText = async (res) => { try { return await res.text(); } catch { return "<no body>"; } };
-
   try {
-    // --- 1) TRY JSON (will likely fail due to CORS, but useful if you later proxy server-side)
-    const res = await fetch(zapierWebhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" }, // triggers preflight
-      body: JSON.stringify(payload),
-    });
-    const t = await readText(res);
-    console.log("[Zapier JSON] status:", res.status, "ok:", res.ok, "body:", t);
-
-    if (res.ok) {
-      alert("Email Sent Successfully!");
-      setSending(false);
-      return;
-    }
-  } catch (e) {
-    console.warn("JSON POST failed (expected in browser due to CORS):", e);
-  }
-
-  try {
-    // --- 2) FALLBACK: form-encoded (simple request → no preflight)
+    // Fallback: form-encoded (simple request → no preflight)
     const form = new URLSearchParams();
     for (const [k, v] of Object.entries(payload)) {
       form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v ?? ""));
     }
 
-    const res2 = await fetch(zapierWebhookUrl, {
+    const res = await fetch(zapierWebhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
       body: form.toString(),
     });
-    const t2 = await readText(res2);
-    console.log("[Zapier FORM] status:", res2.status, "ok:", res2.ok, "body:", t2);
 
-    if (res2.ok) {
-      alert("Email send sucessfully!");
-      setSending(false);
-      return;
-    }
-  } catch (e2) {
-    console.warn("Form-encoded POST failed (unusual):", e2);
-  }
-
-  try {
-    // --- 3) LAST RESORT: sendBeacon (CORS-exempt fire-and-forget)
-    const form = new URLSearchParams();
-    for (const [k, v] of Object.entries(payload)) {
-      form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v ?? ""));
-    }
-    const ok = navigator.sendBeacon(
-      zapierWebhookUrl,
-      new Blob([form.toString()], { type: "application/x-www-form-urlencoded;charset=UTF-8" })
-    );
-    if (ok) {
-      alert("Data queued with sendBeacon (no response to read). Check Zap trigger.");
+    if (res.ok) {
+      setEmailStatus("success");
     } else {
-      alert("Failed to queue data with sendBeacon.");
+      setEmailStatus("error");
     }
-  } catch (e3) {
-    console.error("sendBeacon error:", e3);
-    alert("Failed to send data. See console for details.");
+  } catch (err) {
+    console.error("Error sending quote via Zapier:", err);
+    setEmailStatus("error");
   } finally {
     setSending(false);
   }
@@ -356,6 +315,16 @@ const handleSendToZapier = async () => {
             </button>
           </div>
         </div>
+        {emailStatus === "success" && (
+            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: '8px' }}>
+              Email sent successfully!
+            </div>
+        )}
+        {emailStatus === "error" && (
+            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#fff1f2', border: '1px solid #fecaca', color: '#be123c', borderRadius: '8px' }}>
+              Failed to send email. Please try again later.
+            </div>
+        )}
       </div>
       
       <div className="card">
