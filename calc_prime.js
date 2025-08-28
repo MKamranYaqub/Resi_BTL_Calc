@@ -603,7 +603,7 @@ function App() {
 
       {/* ---------------------- Client Details & Lead (full) --------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1" }}>
-        <h3>Client Details & Lead</h3>
+        <h3>Email This Quote</h3>
         <div className="profile-grid">
           <div className="field">
             <label>Client Name</label>

@@ -302,7 +302,7 @@ const handleSendToZapier = async () => {
       </div>
 
       <div className="card">
-        <h3>Send Data</h3>
+        <h3>Email This Quote</h3>
         <div className="input-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', alignItems: 'flex-end' }}>
           <div className="field" style={{ gridColumn: 'span 2' }}>
             <label>Client Name</label>
