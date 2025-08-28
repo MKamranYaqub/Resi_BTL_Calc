@@ -239,8 +239,8 @@ function App() {
     let grossFromNet = null;
     if (N_input && useSpecificNet === "Yes") {
       const rolledFactor = stressAdj * (rolledMonths / 12);
-      const numerator = N_input * (1 + rolledFactor + deferredCap);
-      const denominator = 1 - feePct;
+ const numerator = N_input ;
+      const denominator = (1-(deferredCap/12*(termMonths))-feePct-(payRateAdj)/12*rolledMonths);
       grossFromNet = numerator / denominator;
     }
 

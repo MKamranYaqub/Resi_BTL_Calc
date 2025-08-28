@@ -211,9 +211,9 @@ function App() {
     const N_input = toNumber(specificNetLoan);
     let grossFromNet = null;
     if (N_input && useSpecificNet === "Yes") {
-      const rolledFactor = (displayRate - deferredCap) * (rolledMonths / 12);
-      const numerator = N_input + N_input * rolledFactor;
-      const denominator = 1 - feePct;
+      const rolledFactor = stressAdj * (rolledMonths / 12);
+ const numerator = N_input ;
+      const denominator = (1-(deferredCap/12*(termMonths))-feePct-(payRateAdj)/12*rolledMonths);
       grossFromNet = numerator / denominator;
     }
 
