@@ -10,11 +10,16 @@
             font-family: 'Inter', sans-serif;
         }
 
+        /* NEW: Container for the main heading and top links */
+        .top-header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
         /* ADDED FOR TOP-RIGHT LINKS */
         .top-links {
-            position: absolute;
-            top: 24px; /* Adjust as needed */
-            right: 24px; /* Adjust as needed */
             display: flex;
             gap: 1rem;
             font-size: 0.875rem; /* text-sm in Tailwind */
@@ -27,6 +32,11 @@
         }
         .top-links a:hover {
             color: #115e59;
+        }
+
+        /* NEW: Class to make the main card a positioning context */
+        .relative-card {
+            position: relative;
         }
 
     </style>

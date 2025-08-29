@@ -247,8 +247,8 @@ const handleSendToZapier = async () => {
       <div className="card">
         <h3>MFS Fusion Calculator</h3>
         <div class="top-links">
-          <a href="https://example.com/fusion-criteria" target="_blank" rel="noopener noreferrer">Fusion Criteria</a>
-          <a href="https://example.com/fusion-product-guide" target="_blank" rel="noopener noreferrer">Fusion Product Guide</a>
+           <a href="https://www.mfsuk.com/bridging-loan-criteria/" target="_blank" rel="noopener noreferrer">Fusion Criteria</a>
+          <a href="https://www.mfsuk.com/pdf/lending-guide-client.pdf" target="_blank" rel="noopener noreferrer">Fusion Product Guide</a>
         </div>
          {/* ADDED LINE HERE */}
     <hr class="section-divider" />

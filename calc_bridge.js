@@ -142,15 +142,41 @@ function App() {
   const [isValid, setIsValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [loanProduct, setLoanProduct] = useState(null);
+  
+  // NEW: State for formatted currency inputs
+  const [loanAmountDisplay, setLoanAmountDisplay] = useState("200,000");
+  const [propertyValueDisplay, setPropertyValueDisplay] = useState("400,000");
+  const [specificNetLoanDisplay, setSpecificNetLoanDisplay] = useState("");
 
   // NEW: First Charge state (masked display + numeric)
   const [firstCharge, setFirstCharge] = useState(0);
   const [firstChargeDisplay, setFirstChargeDisplay] = useState("");
+
+  // NEW: Universal handler for formatted number inputs
+  const handleFormattedChange = (raw, setNumericState, setDisplayState) => {
+    const rawDigits = raw.replace(/[^\d]/g, "");
+    const num = rawDigits ? parseInt(rawDigits, 10) : 0;
+    setNumericState(num);
+    setDisplayState(rawDigits.toLocaleString("en-GB"));
+  };
+
+  const handleLoanAmountChange = (e) => {
+    handleFormattedChange(e.target.value, setLoanAmount, setLoanAmountDisplay);
+  };
+
+  const handlePropertyValueChange = (e) => {
+    handleFormattedChange(e.target.value, setPropertyValue, setPropertyValueDisplay);
+  };
+  
+  const handleSpecificNetLoanChange = (e) => {
+    handleFormattedChange(e.target.value, setSpecificNetLoan, setSpecificNetLoanDisplay);
+  };
+
   const handleFirstChargeChange = (e) => {
     const raw = e.target.value.replace(/[^\d]/g, "");
     const num = raw ? parseInt(raw, 10) : 0;
     setFirstCharge(num);
-    setFirstChargeDisplay(raw ? "£" + num.toLocaleString("en-GB") : "");
+    setFirstChargeDisplay(raw ? num.toLocaleString("en-GB") : "");
   };
 
   // Email fields
@@ -214,6 +240,13 @@ function App() {
     if (chargeType === "First Charge") {
       setFirstCharge(0);
       setFirstChargeDisplay("");
+    }
+  }, [chargeType]);
+
+  // Effect to set "Use Specific Net Loan?" to "No" if "Second Charge" is selected
+  useEffect(() => {
+    if (chargeType === "Second Charge") {
+      setUseSpecificNetLoan("No");
     }
   }, [chargeType]);
 
@@ -573,7 +606,6 @@ function App() {
         emailAddress,
         chargeType,
         propertyType,
-        loanProduct,
         propertyValue: propertyValue,
         loanAmount:
           useSpecificNetLoan === "Yes"
@@ -642,22 +674,18 @@ function App() {
 
   return (
     <div className="bg-gray-100 p-8 min-h-screen font-sans">
-      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-xl p-8 relative">
-        {/* Header */}
-        <div className="mb-8">
+      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-xl p-8 relative-card">
+        {/* New container for the heading and links */}
+        <div className="top-header-container">
           <h1 className="text-2xl font-bold text-gray-800">
             MFS Bridge Calculator
           </h1>
-          <p className="text-sm text-gray-600"></p>
+          <div className="top-links">
+            <a href="https://www.mfsuk.com/bridging-loan-criteria/" target="_blank" rel="noopener noreferrer">Brdige Loan Criteria</a>
+            <a href="https://www.mfsuk.com/pdf/lending-guide-client.pdf" target="_blank" rel="noopener noreferrer">Brdige Product Guide</a>
+          </div>
         </div>
 
-        {/* ADDED LINKS HERE */}
-        <div className="top-links">
-          <a href="https://www.mfsuk.com/bridging-loan-criteria/" target="_blank" rel="noopener noreferrer">BTL Residential Criteria</a>
-          <a href="https://www.mfsuk.com/pdf/lending-guide-client.pdf" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
-        </div>
- {/* ADDED LINE HERE */}
-    <hr class="section-divider" />
         {/* Inputs */}
         <div className="space-y-6">
           <SectionTitle>Loan Details</SectionTitle>
@@ -706,20 +734,21 @@ function App() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <InputField
               label="Gross Loan (£)"
-              value={loanAmount}
-              onChange={(e) => setLoanAmount(e.target.value)}
+              value={loanAmountDisplay}
+              onChange={handleLoanAmountChange}
               disabled={useSpecificNetLoan === "Yes"}
               placeholder={
                 useSpecificNetLoan === "Yes"
                   ? "Calculated automatically"
-                  : "e.g. 250000"
+                  : "e.g. 250,000"
               }
             />
 
             <InputField
               label="Property Value (£)"
-              value={propertyValue}
-              onChange={(e) => setPropertyValue(e.target.value)}
+              value={propertyValueDisplay}
+              onChange={handlePropertyValueChange}
+              placeholder="e.g. 200,000"
             />
 
             {/* First Charge (£) — visible only when Charge Type is NOT First Charge */}
@@ -732,7 +761,7 @@ function App() {
                   type="text"
                   value={firstChargeDisplay}
                   onChange={handleFirstChargeChange}
-                  placeholder="£200,000"
+                  placeholder="e.g. 200,000"
                   className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 bg-red-50"
                 />
               </div>
@@ -748,9 +777,10 @@ function App() {
 
             <InputField
               label="Specific Net Loan (£)"
-              value={specificNetLoan}
-              onChange={(e) => setSpecificNetLoan(e.target.value)}
+              value={specificNetLoanDisplay}
+              onChange={handleSpecificNetLoanChange}
               disabled={useSpecificNetLoan === "No"}
+              placeholder="e.g. 200,000"
             />
 
             <SelectField
@@ -856,7 +886,7 @@ function App() {
           {displayResults && (
             <div className="border border-gray-200 rounded-xl shadow-sm overflow-hidden bg-white">
               {/* Header row: empty label column + two product pill headers */}
-              <div className="grid grid-cols-[1fr,1fr,1fr]">
+              <div className="grid grid-cols-[1fr,1fr,1fr] gap-2">
                 <div className="bg-white" />
                 <PillHeader className="bg-emerald-600">Fixed Bridge</PillHeader>
                 <PillHeader className="bg-sky-600">Variable Bridge</PillHeader>

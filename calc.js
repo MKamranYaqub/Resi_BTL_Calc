@@ -446,7 +446,7 @@ function App() {
     <div className="container">
       {/* --------------------- Property Details (full width) -------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1", position: "relative" }}>
-        <h3>MFS BTL Residential Calculator</h3>
+        <h3>MFS BTL Residential Calculator (Specialist Product)</h3>
         
         {/* ADDED LINKS HERE */}
         <div className="top-links">

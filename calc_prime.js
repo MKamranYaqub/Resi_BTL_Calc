@@ -391,7 +391,7 @@ function App() {
           
           {/* Left side: Heading */}
           <div>
-            <h3>MFS BTL Residential Prime Calculator</h3>
+            <h3>MFS BTL Residential Calculator (Core Product)</h3>
           </div>
 
           {/* Right side: Links and Exclusions */}
