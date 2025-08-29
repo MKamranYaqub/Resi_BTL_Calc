@@ -239,30 +239,37 @@ function App() {
   }
 
   function computeBasicGrossForCol(colKey) {
-    const base = selected?.[colKey];
-    if (base == null) return null;
+  const base = selected?.[colKey];
+  if (base == null) return null;
 
-    const pv = toNumber(propertyValue);
-    const mr = toNumber(monthlyRent);
-    const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
-    const maxLTV = getMaxLTV(tier, flatAboveComm);
-    const grossLTV = pv ? pv * maxLTV : Infinity;
-    const displayRate = isTracker ? base + STANDARD_BBR : base;
-    const stressRate = isTracker ? base + STRESS_BBR : displayRate;
-    const deferredCap = 0;
-    const stressAdj = Math.max(stressRate - deferredCap, 1e-6);
+  const pv = toNumber(propertyValue);
+  const mr = toNumber(monthlyRent);
+  const sn = toNumber(specificNetLoan);
+  const feePct = Number(colKey) / 100;
+  const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
+  const maxLTV = getMaxLTV(tier, flatAboveComm);
+  const grossLTV = pv ? pv * maxLTV : Infinity;
+  const displayRate = isTracker ? base + STANDARD_BBR : base;
+  const stressRate = isTracker ? base + STRESS_BBR : displayRate;
+  const deferredCap = 0;
+  const stressAdj = Math.max(stressRate - deferredCap, 1e-6);
 
-    let grossRent = Infinity;
-    if (mr && stressAdj) {
-      const annualRent = mr * 12;
-      grossRent = annualRent / (minICR * stressAdj);
-    }
-
-    const eligibleGross = Math.min(grossLTV, grossRent, MAX_LOAN);
-    const ltvPct = pv ? Math.round((eligibleGross / pv) * 100) : null;
-
-    return { grossBasic: eligibleGross, ltvPctBasic: ltvPct };
+  let grossRent = Infinity;
+  if (mr && stressAdj) {
+    const annualRent = mr * 12;
+    grossRent = annualRent / (minICR * stressAdj);
   }
+
+  let grossFromNet = Infinity;
+  if (useSpecificNet === "Yes" && sn != null && feePct < 1) {
+    grossFromNet = sn / (1 - feePct);
+  }
+
+  const eligibleGross = Math.min(grossLTV, grossRent, grossFromNet, MAX_LOAN);
+  const ltvPct = pv ? Math.round((eligibleGross / pv) * 100) : null;
+
+  return { grossBasic: eligibleGross, ltvPctBasic: ltvPct };
+}
 
   const bestSummary = useMemo(() => {
     if (!canShowMatrix) return null;

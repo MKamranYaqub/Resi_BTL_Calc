@@ -279,13 +279,15 @@ function App() {
   }
 
   // "Basic Gross" per column: **no rolled months, no deferred interest**
+  // "Basic Gross" per column: **no rolled months, no deferred interest**
   function computeBasicGrossForCol(colKey) {
     const base = selected?.[colKey];
     if (base == null) return null;
 
-
     const pv = toNumber(propertyValue);
     const mr = toNumber(monthlyRent);
+    const sn = toNumber(specificNetLoan); // Get specific net loan
+    const feePct = Number(colKey) / 100; // Get the fee percentage
 
     const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
     const maxLTV = getMaxLTV(tier, flatAboveComm);
@@ -305,8 +307,16 @@ function App() {
       const annualRent = mr * termMonths;
       grossRent = annualRent / (minICR * (stressAdj / 12) * monthsLeft);
     }
+    
+    // Calculate gross loan from specific net loan, if applicable
+    let grossFromNet = Infinity;
+    if (useSpecificNet === "Yes" && sn != null && feePct < 1) {
+      // Basic calculation: Net Loan / (1 - Fee %)
+      grossFromNet = sn / (1 - feePct);
+    }
 
-    const eligibleGross = Math.min(grossLTV, grossRent, MAX_LOAN);
+    // The final eligible gross is the minimum of all calculation methods
+    const eligibleGross = Math.min(grossLTV, grossRent, grossFromNet, MAX_LOAN);
     const ltvPct = pv ? Math.round((eligibleGross / pv) * 100) : null;
 
     return {

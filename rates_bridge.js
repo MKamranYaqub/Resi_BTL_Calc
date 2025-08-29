@@ -23,75 +23,75 @@ window.STANDARD_BBR_Bridges = 0.04; // 4%
 window.RATES_Bridges = {
   "Variable Rate": {
     "Single Property": {
+      "60% LTV": 0.0040,
+      "70% LTV": 0.0005,
+      "75% LTV": 0.0060,
+    },
+    "Large Single Property": {
+      "60% LTV": 0.0050,
+      "70% LTV": 0.0060,
+      "75% LTV": 0.0070,
+    },
+    "BTL Portfolio Multi-Unit Dev Exit": {
       "60% LTV": 0.0045,
       "70% LTV": 0.0055,
       "75% LTV": 0.0065,
     },
-    "Large Single Property": {
-      "60% LTV": 0.0055,
-      "70% LTV": 0.0065,
-      "75% LTV": 0.0075,
-    },
-    "BTL Portfolio Multi-Unit Dev Exit": {
-      "60% LTV": 0.0050,
-      "70% LTV": 0.0060,
-      "75% LTV": 0.0070,
-    },
     "Permitted & Light Development": {
-      "60% LTV": 0.0050,
-      "70% LTV": 0.0060,
-      "75% LTV": 0.0070,
+      "60% LTV": 0.0045,
+      "70% LTV": 0.0055,
+      "75% LTV": 0.0065,
     },
     "Semi & Commercial": {
+      "60% LTV": 0.0045,
+      "70% LTV": 0.0055,
+      "75% LTV": 0.0065,
+    },
+    "Semi & Commercial Large Loans": {
       "60% LTV": 0.0050,
       "70% LTV": 0.0060,
       "75% LTV": 0.0070,
     },
-    "Semi & Commercial Large Loans": {
-      "60% LTV": 0.0055,
-      "70% LTV": 0.0065,
-      "75% LTV": 0.0075,
-    },
     "2nd Charge Residential Only": {
-      "60% LTV": 0.0050,
-      "70% LTV": 0.0060,
+      "60% LTV": 0.0045,
+      "70% LTV": 0.0055,
       "75% LTV": null, // Not applicable
     }
   },
   "Fixed Rate": {
     "Single Property": {
+      "60% LTV": 0.0075,
+      "70% LTV": 0.0085,
+      "75% LTV": 0.0095,
+    },
+    "Large Single Property": {
+      "60% LTV": 0.0085,
+      "70% LTV": 0.0095,
+      "75% LTV": 0.0105,
+    },
+    "BTL Portfolio Multi-Unit Dev Exit": {
       "60% LTV": 0.0080,
       "70% LTV": 0.0090,
       "75% LTV": 0.0100,
     },
-    "Large Single Property": {
-      "60% LTV": 0.0090,
-      "70% LTV": 0.0100,
-      "75% LTV": 0.0110,
-    },
-    "BTL Portfolio Multi-Unit Dev Exit": {
-      "60% LTV": 0.0085,
-      "70% LTV": 0.0095,
-      "75% LTV": 0.0105,
-    },
     "Permitted & Light Development": {
-      "60% LTV": 0.0085,
-      "70% LTV": 0.0095,
-      "75% LTV": 0.0105,
+      "60% LTV": 0.0080,
+      "70% LTV": 0.0090,
+      "75% LTV": 0.0100,
     },
     "Semi & Commercial": {
+      "60% LTV": 0.0080,
+      "70% LTV": 0.0090,
+      "75% LTV": 0.0100,
+    },
+    "Semi & Commercial Large Loans": {
       "60% LTV": 0.0085,
       "70% LTV": 0.0095,
       "75% LTV": 0.0105,
     },
-    "Semi & Commercial Large Loans": {
-      "60% LTV": 0.0090,
-      "70% LTV": 0.0100,
-      "75% LTV": 0.0110,
-    },
     "2nd Charge Residential Only": {
-      "60% LTV": 0.0085,
-      "70% LTV": 0.0095,
+      "60% LTV": 0.0080,
+      "70% LTV": 0.0090,
       "75% LTV": null, // Not applicable
     }
   }
