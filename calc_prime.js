@@ -384,38 +384,46 @@ function App() {
   return (
     <div className="container">
       {/* --------------------- Property Details (full width) -------------------- */}
-      <div className="card" style={{ gridColumn: "1 / -1" }}>
+      <div className="card" style={{ gridColumn: "1 / -1", position: "relative" }}>
+        
+        {/* New flexbox container for header elements */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <h3>MFS BTL Residential Prime Calculator</h3>
-          <div style={{
-            background: '#ffc107',
-            color: '#333',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            textAlign: 'center',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}>
-            EXCLUSIONS
-            <div style={{ fontSize: '12px', fontWeight: 'normal', marginTop: '4px', textAlign: 'left', display: 'flex', flexWrap: 'wrap', gap: '0 10px', columnCount: 2 }}>
-              <ul style={{ margin: 0, padding: '0 0 0 16px', listStyleType: 'disc', columnBreakInside: 'avoid' }}>
-                <li>Holiday Let</li>
-                <li>First Time Buyer</li>
-                <li>Offshore Company</li>
-              </ul>
-              <ul style={{ margin: 0, padding: '0 0 0 16px', listStyleType: 'disc', columnBreakInside: 'avoid' }}>
-                <li>Foreign National</li>
-                <li>Bankruptcy</li>
-                <li>Flat above commercial</li>
-              </ul>
+          
+          {/* Left side: Heading */}
+          <div>
+            <h3>MFS BTL Residential Prime Calculator</h3>
+          </div>
+
+          {/* Right side: Links and Exclusions */}
+          <div className="top-right-container">
+            <div className="top-right-links">
+              <a href="https://example.com/btl-prime-criteria" target="_blank" rel="noopener noreferrer">BTL Residential Criteria</a>
+              <a href="https://example.com/btl-prime-product-guide" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
+            </div>
+            <div className="top-right-exclusions">
+              EXCLUSIONS
+              <div className="exclusion-list">
+                <ul style={{ margin: 0, padding: '0 0 0 16px', listStyleType: 'disc'}}>
+                  <li>Holiday Let</li>
+                  <li>First Time Buyer</li>
+                  <li>Offshore Company</li>
+                </ul>
+                <ul style={{ margin: 0, padding: '0 0 0 16px', listStyleType: 'disc'}}>
+                  <li>Foreign National</li>
+                  <li>Bankruptcy</li>
+                  <li>Flat above commercial</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
-        <div className="note" style={{ marginBottom: 8 }}>
+
+        {/* This is the section you want to move */}
+        <div className="note" style={{ marginBottom: 8, marginTop: '20px' }}>
           Tier is calculated automatically from the inputs below. Current:{" "}
           <b>{tier}</b>
         </div>
+
         {tier === "Excluded" && (
           <div style={{
             gridColumn: "1 / -1",
@@ -846,11 +854,7 @@ function App() {
                             {TOTAL_TERM} years | {formatERC(productType)}
                           </div>
                         </div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {(data.maxLTVRule * 100).toFixed(0)}%
-                          </div>
-                        </div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{(data.maxLTVRule * 100).toFixed(0)}%</div></div>
                       </div>
                     );
                   })}

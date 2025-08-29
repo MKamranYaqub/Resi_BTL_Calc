@@ -245,7 +245,15 @@ const handleSendToZapier = async () => {
   return (
     <div className="container">
       <div className="card">
-        <h3>Fusion Calculator</h3>
+        <h3>MFS Fusion Calculator</h3>
+        <div class="top-links">
+          <a href="https://example.com/fusion-criteria" target="_blank" rel="noopener noreferrer">Fusion Criteria</a>
+          <a href="https://example.com/fusion-product-guide" target="_blank" rel="noopener noreferrer">Fusion Product Guide</a>
+        </div>
+         {/* ADDED LINE HERE */}
+    <hr class="section-divider" />
+        {/* ADDED HEADING HERE */}
+        <h4>Loan Details</h4>
         <div className="input-grid">
           <div className="field">
             <label>Property Type</label>
@@ -302,7 +310,7 @@ const handleSendToZapier = async () => {
       </div>
 
       <div className="card">
-        <h3>Email This Quote</h3>
+        <h4>Email This Quote</h4>
         <div className="input-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', alignItems: 'flex-end' }}>
           <div className="field" style={{ gridColumn: 'span 2' }}>
             <label>Client Name</label>
@@ -335,7 +343,7 @@ const handleSendToZapier = async () => {
       </div>
       
       <div className="card">
-        <h3>Summary</h3>
+        <h4>Summary</h4>
         {calculation ? (
           <div className="summary-table" style={{ gridTemplateColumns: '1fr 1.5fr' }}>
             <div className="summary-header label-header" style={{ gridColumn: '1 / -1', background: headerColors[calculation.productColor] || '#334155', justifyContent: 'center' }}>

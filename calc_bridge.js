@@ -642,15 +642,22 @@ function App() {
 
   return (
     <div className="bg-gray-100 p-8 min-h-screen font-sans">
-      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-xl p-8">
+      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-xl p-8 relative">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800">
-            Bridging Calculator
+            MFS Bridge Calculator
           </h1>
           <p className="text-sm text-gray-600"></p>
         </div>
 
+        {/* ADDED LINKS HERE */}
+        <div className="top-links">
+          <a href="https://www.mfsuk.com/bridging-loan-criteria/" target="_blank" rel="noopener noreferrer">BTL Residential Criteria</a>
+          <a href="https://www.mfsuk.com/pdf/lending-guide-client.pdf" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
+        </div>
+ {/* ADDED LINE HERE */}
+    <hr class="section-divider" />
         {/* Inputs */}
         <div className="space-y-6">
           <SectionTitle>Loan Details</SectionTitle>
