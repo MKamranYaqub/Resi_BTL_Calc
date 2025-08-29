@@ -116,8 +116,8 @@ function App() {
     };
     const mapExp = {
       "No (Tier 1)": 1,
-      "UK footprint (Tier 2)": 2,
-      "Yes (Tier 3)": 3,
+      "Yes - UK footprint (Tier 2)": 2,
+      "Yes - Without UK footprint (Tier 3)": 3,
       No: 1,
       "UK footprint": 2,
       Yes: 3,
@@ -239,8 +239,8 @@ function App() {
     let grossFromNet = null;
     if (N_input && useSpecificNet === "Yes") {
       const rolledFactor = stressAdj * (rolledMonths / 12);
- const numerator = N_input ;
-      const denominator = (1-(deferredCap/12*(termMonths))-feePct-(payRateAdj)/12*rolledMonths);
+      const numerator = N_input;
+      const denominator = (1 - (deferredCap / 12 * (termMonths)) - feePct - (payRateAdj) / 12 * rolledMonths);
       grossFromNet = numerator / denominator;
     }
 
@@ -282,7 +282,7 @@ function App() {
   function computeBasicGrossForCol(colKey) {
     const base = selected?.[colKey];
     if (base == null) return null;
-    
+
 
     const pv = toNumber(propertyValue);
     const mr = toNumber(monthlyRent);
@@ -350,7 +350,7 @@ function App() {
       alert("Please ensure the calculation is complete before sending.");
       return;
     }
-    
+
     setSending(true);
     setSendStatus(null);
 
@@ -383,8 +383,8 @@ function App() {
         revertRate: formatRevertRate(tier),
         totalTerm: `${TOTAL_TERM} years`,
         erc: formatERC(productType),
-        currentMvr: CURRENT_MVR,
-        standardBbr: STANDARD_BBR,
+        currentMVR: CURRENT_MVR,
+        standardBBR: STANDARD_BBR,
       };
 
       let success = false;
@@ -445,8 +445,15 @@ function App() {
   return (
     <div className="container">
       {/* --------------------- Property Details (full width) -------------------- */}
-      <div className="card" style={{ gridColumn: "1 / -1" }}>
+      <div className="card" style={{ gridColumn: "1 / -1", position: "relative" }}>
         <h3>MFS BTL Residential Calculator</h3>
+        
+        {/* ADDED LINKS HERE */}
+        <div className="top-links">
+          <a href="https://www.mfsuk.com/buy-to-let-mortgage-criteria/" target="_blank" rel="noopener noreferrer">BTL Residential Criteria</a>
+          <a href="https://www.mfsuk.com/pdf/btl-product-guide-client.pdf" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
+        </div>
+
         <div className="note" style={{ marginBottom: 8 }}>
           Tier is calculated automatically from the inputs below. Current:{" "}
           <b>{tier}</b>
@@ -482,11 +489,22 @@ function App() {
           </div>
 
           <div className="field">
-            <label>Flat above commercial?</label>
-            <select value={flatAboveComm} onChange={(e) => setFlatAboveComm(e.target.value)}>
+            <label htmlFor="flat-above-commercial">Flat above commercial?</label>
+            <select id="flat-above-commercial" value={flatAboveComm} onChange={(e) => setFlatAboveComm(e.target.value)}>
               <option>No</option>
               <option>Yes</option>
             </select>
+            <div style={{
+              marginTop: 8,
+              background: '#f1f5f9',
+              color: '#475569',
+              fontSize: 12,
+              padding: '8px 10px',
+              borderRadius: 8,
+              textAlign: 'center'
+            }}>
+              Tier 2 LTV: 60% | Tier 3 LTV: 70%
+                          </div>
           </div>
 
           <SectionTitle>Applicant Details</SectionTitle>
@@ -495,8 +513,8 @@ function App() {
             <label>Expat / Foreign National</label>
             <select value={expat} onChange={(e) => setExpat(e.target.value)}>
               <option>No (Tier 1)</option>
-              <option>UK footprint (Tier 2)</option>
-              <option>Yes (Tier 3)</option>
+              <option>Yes - UK footprint (Tier 2)</option>
+              <option>Yes - Without UK footprint (Tier 3)</option>
             </select>
           </div>
 
@@ -659,9 +677,9 @@ function App() {
           </div>
 
           <div className="field" style={{ alignSelf: "end" }}>
-            <button 
-              onClick={handleSendQuote} 
-              className="primaryBtn" 
+            <button
+              onClick={handleSendQuote}
+              className="primaryBtn"
               disabled={sending || !canShowMatrix}
             >
               {sending ? "Sending…" : "Send Quote via Email"}

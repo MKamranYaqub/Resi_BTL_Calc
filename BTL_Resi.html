@@ -6,6 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BTL Rate Matrix</title>
     <style>
+       .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px; /* Adjust gap as needed */
+      width: 100%;
+    }
+    
+    @media (min-width: 768px) {
+      .profile-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    
+    /* ADDED FOR HELPER TEXT */
+    .flat-above-comm-field > div:last-child {
+      grid-column: 1 / -1;
+    }
+    
+    /* ADDED FOR TOP-RIGHT LINKS */
+    .top-links {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .top-links a {
+      color: #0d9488;
+      text-decoration: none;
+    }
+    
       :root {
         --bg: #f1f5f9;
         --card: #fff;
@@ -43,6 +76,8 @@
         border-radius: 16px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         padding: 16px;
+        /* Make card a positioning context for top-links */
+        position: relative;
       }
       h3 {
         margin: 0 0 12px 0;
@@ -168,6 +203,7 @@
         border-color: var(--input-focus);
         box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
       }
+      
 
       /* Input grid */
       .profile-grid {
