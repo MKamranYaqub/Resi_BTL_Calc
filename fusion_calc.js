@@ -301,9 +301,9 @@ const handleSendToZapier = async () => {
           </div>
           <div className="field" style={{ gridColumn: 'span 2', justifySelf: 'end', marginTop: '1rem' }}>
               <div style={{ background: '#fcf8f9ff', border: '1px solid #0e6de9ff', borderRadius: '8px', padding: '0.75rem 1rem', fontSize: '0.8rem', color: '#475569' }}>
-                  <div><b>Fusion Small:</b> £100k - £3m</div>
-                  <div><b>Fusion Medium:</b> £3m - £10m</div>
-                  <div><b>Fusion Large:</b> £10m+</div>
+                  <div><b>Fusion Standard:</b> £100k - £3m</div>
+                  <div><b>Fusion Large:</b> £3m - £20m</div>
+                  
               </div>
           </div>
         </div>
@@ -346,7 +346,7 @@ const handleSendToZapier = async () => {
         <h4>Summary</h4>
         {calculation ? (
           <div className="summary-table" style={{ gridTemplateColumns: '1fr 1.5fr' }}>
-            <div className="summary-header label-header" style={{ gridColumn: '1 / -1', background: headerColors[calculation.productColor] || '#334155', justifyContent: 'center' }}>
+            <div className="summary-header label-header" style={{ gridColumn: '1 / -1', background: headerColors[calculation.productColor] || '#3001ffff', justifyContent: 'center' }}>
               {calculation.productName}
             </div>
             {[
