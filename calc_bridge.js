@@ -605,6 +605,7 @@ function App() {
         contactNumber,
         emailAddress,
         chargeType,
+        firstChargeDisplay,
         propertyType,
         propertyValue: propertyValue,
         loanAmount:
