@@ -242,7 +242,7 @@ function App() {
     const ddAmount = eligibleGross * (payRateAdj / 12);
 
     return {
-      productName: `${productType}, ${tier}, ${Number(colKey)}% Fee`,
+      productName: `${productType}, ${tier}`,
       fullRateText,
       payRateText,
       net,

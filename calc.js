@@ -259,7 +259,7 @@ function App() {
     const ddAmount = eligibleGross * (payRateAdj / 12);
 
     return {
-      productName: `${productType}, ${tier}, ${Number(colKey)}% Fee`,
+      productName: `${productType}, ${tier}`,
       fullRateText,
       payRateText,
       deferredCapPct: deferredCap,
@@ -856,7 +856,7 @@ function App() {
                           <div className="mValue" style={valueBoxStyle}>
                             {data.payRateText}
                             <span style={{ fontWeight: 500, fontSize: 10, marginLeft: 6 }}>
-                              (using {(data.deferredCapPct * 100).toFixed(2)}% deferred cap)
+                              (using {(data.deferredCapPct * 100).toFixed(2)}% deferred)
                             </span>
                           </div>
                         </div>
