@@ -135,12 +135,11 @@ function App() {
     if (ftl === "Yes") t = Math.max(t, 2);
 
     if (adverse === "Yes") {
-      const advMapMA = { "0 in 24": 1, "0 in 18": 2, "2 in 18, 0 in 6": 3 };
-      const advMapUA = { "0 in 24": 1, "0 in 12": 2, "2 in last 18": 3 };
-      const advMapCD = { "0 in 24": 1, "0 in 18": 2, "2 in 18, 0 in 6": 3 };
+      const advMapMA = { "0 in 24": 1, "0 in 18": 2, "All considered by referral": 3 };
+      const advMapUA = { "0 in 24": 1, "0 in 12": 2, "All considered by referral": 3 };
+      const advMapCD = { "0 in 24": 1, "0 in 18": 2, "All considered by referral": 3 };
       const advMapBank = {
         Never: 1,
-        "Discharged >3yrs": 3,
         "All considered by referral": 3,
       };
       const adverseTier = Math.max(
@@ -565,7 +564,7 @@ function App() {
                 <select value={mortArrears} onChange={(e) => setMortArrears(e.target.value)}>
                   <option>0 in 24</option>
                   <option>0 in 18</option>
-                  <option>2 in 18, 0 in 6</option>
+                  <option>All considered by referral</option>
                 </select>
               </div>
 
@@ -574,7 +573,7 @@ function App() {
                 <select value={unsArrears} onChange={(e) => setUnsArrears(e.target.value)}>
                   <option>0 in 24</option>
                   <option>0 in 12</option>
-                  <option>2 in last 18</option>
+                  <option>All considered by referral</option>
                 </select>
               </div>
 
@@ -583,7 +582,7 @@ function App() {
                 <select value={ccjDefault} onChange={(e) => setCcjDefault(e.target.value)}>
                   <option>0 in 24</option>
                   <option>0 in 18</option>
-                  <option>2 in 18, 0 in 6</option>
+                  <option>All considered by referral</option>
                 </select>
               </div>
 
@@ -591,7 +590,6 @@ function App() {
                 <label>Bankruptcy</label>
                 <select value={bankruptcy} onChange={(e) => setBankruptcy(e.target.value)}>
                   <option>Never</option>
-                  <option>Discharged &gt;3yrs</option>
                   <option>All considered by referral</option>
                 </select>
               </div>
