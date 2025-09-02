@@ -78,7 +78,7 @@ function App() {
     let preliminaryGrossLoan = 0;
     if (useSpecificNet === "Yes") {
         const approxCouponRate = PRODUCTS[propertyType]?.Small?.rate || 0.05;
-        const rolledFactorApprox = ((approxCouponRate - di) / 12) * rm;
+        const rolledFactorApprox = (((approxCouponRate - di) + BBR) / 12) * rm;
         const deferredFactor = (di / 12) * TERM_MONTHS;
         const denominatorApprox = 1 - ARRANGEMENT_FEE_PCT - rolledFactorApprox - deferredFactor;
 
@@ -116,7 +116,7 @@ function App() {
     let initialGrossLoan = 0;
 
     if (useSpecificNet === "Yes") {
-        const rolledFactor = ((couponRate - di) / 12) * rm;
+        const rolledFactor = (((couponRate - di) + BBR) / 12) * rm;
         const deferredFactor = (di / 12) * TERM_MONTHS;
         const denominator = 1 - ARRANGEMENT_FEE_PCT - rolledFactor - deferredFactor;
 
