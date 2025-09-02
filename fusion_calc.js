@@ -334,45 +334,48 @@ const handleSendToZapier = async () => {
       </div>
 
       <div className="card mb-4">
-        <div className="p-4">
-          <h5>Email This Quote</h5>
-          <div className="row g-3 align-items-end">
-            <div className="col-lg-4 col-md-6 col-12">
-              <div className="field">
-                <label className="form-label">Client Name</label>
-                <input type="text" className="form-control" placeholder="e.g. Jane Doe" value={clientName} onChange={e => setClientName(e.target.value)} />
-              </div>
+    <div className="p-4">
+        <h5>Email This Quote</h5>
+        <div className="row g-3 align-items-end">
+            <div className="col-lg-3 col-md-6 col-12">
+                <div className="field">
+                    <label className="form-label">Client Name</label>
+                    <input type="text" className="form-control" placeholder="e.g. Jane Doe" value={clientName} onChange={e => setClientName(e.target.value)} />
+                </div>
             </div>
-            <div className="col-lg-4 col-md-6 col-12">
-              <div className="field">
-                <label className="form-label">Contact Number</label>
-                <input type="tel" className="form-control" placeholder="e.g. 07123456789" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
-              </div>
+            <div className="col-lg-3 col-md-6 col-12">
+                <div className="field">
+                    <label className="form-label">Contact Number</label>
+                    <input type="tel" className="form-control" placeholder="e.g. 07123456789" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
+                </div>
             </div>
-            <div className="col-lg-4 col-md-6 col-12">
-              <div className="field">
-                <label className="form-label">Client Email</label>
-                <input type="email" className="form-control" placeholder="e.g. jane.doe@example.com" value={clientEmail} onChange={e => setClientEmail(e.target.value)} />
-              </div>
+            <div className="col-lg-3 col-md-6 col-12">
+                <div className="field">
+                    <label className="form-label">Client Email</label>
+                    <input type="email" className="form-control" placeholder="e.g. jane.doe@example.com" value={clientEmail} onChange={e => setClientEmail(e.target.value)} />
+                </div>
             </div>
-            <div className="col-12">
-              <button onClick={handleSendToZapier} className="btn btn-primary w-100" disabled={sending || !calculation}>
-                {sending ? 'Sending...' : 'Send Email'}
-              </button>
+            <div className="col-lg-3 col-md-6 col-12" style={{ alignSelf: "end" }}>
+                <div className="field">
+                    <label className="form-label d-lg-block d-none">&nbsp;</label>
+                    <button onClick={handleSendToZapier} className="btn btn-primary w-100" disabled={sending || !calculation}>
+                        {sending ? 'Sending...' : 'Send Email'}
+                    </button>
+                </div>
             </div>
-          </div>
-          {emailStatus === "success" && (
-              <div className="alert alert-success mt-4" role="alert">
-                Email sent successfully!
-              </div>
-          )}
-          {emailStatus === "error" && (
-              <div className="alert alert-danger mt-4" role="alert">
-                Failed to send email. Please try again later.
-              </div>
-          )}
         </div>
-      </div>
+        {emailStatus === "success" && (
+            <div className="alert alert-success mt-4" role="alert">
+                Email sent successfully!
+            </div>
+        )}
+        {emailStatus === "error" && (
+            <div className="alert alert-danger mt-4" role="alert">
+                Failed to send email. Please try again later.
+            </div>
+        )}
+    </div>
+</div>
       
       <div className="card mb-4">
         <div className="p-4">
