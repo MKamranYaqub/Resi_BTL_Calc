@@ -390,9 +390,7 @@ function App() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           
           {/* Left side: Heading */}
-          <div>
-            <h3>MFS BTL Residential Calculator (Core Product)</h3>
-          </div>
+          
 
           {/* Right side: Links and Exclusions */}
           <div className="top-right-container">
@@ -400,6 +398,9 @@ function App() {
           <a href="https://www.mfsuk.com/buy-to-let-mortgage-criteria/" target="_blank" rel="noopener noreferrer">BTL Residential Criteria</a>
           <a href="https://www.mfsuk.com/pdf/btl-product-guide-client.pdf" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
         </div>
+        <div>
+            <h3>MFS BTL Residential Calculator (Core Product)</h3>
+          </div>
             <div className="top-right-exclusions">
               EXCLUSIONS
               <div className="exclusion-list">

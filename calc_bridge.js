@@ -679,13 +679,15 @@ function App() {
       <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-xl p-8 relative-card">
         {/* New container for the heading and links */}
         <div className="top-header-container">
-          <h1 className="text-2xl font-bold text-gray-800">
-            MFS Bridge Calculator
-          </h1>
+         
           <div className="top-links">
             <a href="https://www.mfsuk.com/bridging-loan-criteria/" target="_blank" rel="noopener noreferrer">Brdige Loan Criteria</a>
             <a href="https://www.mfsuk.com/pdf/lending-guide-client.pdf" target="_blank" rel="noopener noreferrer">Brdige Product Guide</a>
           </div>
+          <br></br>
+           <h1 className="text-2xl font-bold text-gray-800">
+            MFS Bridge Calculator
+          </h1>
         </div>
 
         {/* Inputs */}

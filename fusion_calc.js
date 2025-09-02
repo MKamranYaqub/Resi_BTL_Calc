@@ -248,16 +248,21 @@ const handleSendToZapier = async () => {
         
 <div className="p-4">
   <div className="header-container">
-    <h3>MFS Fusion Calculator</h3>
+   
     <div className="top-links">
        <a href="https://www.mfsuk.com/bridging-loan-criteria/" target="_blank" rel="noopener noreferrer">Fusion Criteria</a>
       <a href="https://www.mfsuk.com/pdf/lending-guide-client.pdf" target="_blank" rel="noopener noreferrer">Fusion Product Guide</a>
     </div>
   </div>
+  
+  <div className="header-container">
+    <h3>MFS Fusion Calculator</h3>
+    
+  </div>
            {/* ADDED LINE HERE */}
       <hr className="section-divider" />
           {/* ADDED HEADING HERE */}
-          <h4>Loan Details</h4>
+          <h5>Loan Details</h5>
           <div className="row g-3">
             <div className="col-lg-3 col-md-6 col-12">
               <div className="field">
@@ -329,7 +334,7 @@ const handleSendToZapier = async () => {
 
       <div className="card mb-4">
         <div className="p-4">
-          <h4>Email This Quote</h4>
+          <h5>Email This Quote</h5>
           <div className="row g-3 align-items-end">
             <div className="col-lg-4 col-md-6 col-12">
               <div className="field">
@@ -370,7 +375,7 @@ const handleSendToZapier = async () => {
       
       <div className="card mb-4">
         <div className="p-4">
-          <h4>Summary</h4>
+          <h5>Summary</h5>
           {calculation ? (
             <div className="summary-table">
               <div className="summary-header label-header" style={{ gridColumn: '1 / -1', background: headerColors[calculation.productColor] || '#3001ffff', justifyContent: 'center' }}>
