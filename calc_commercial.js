@@ -387,13 +387,13 @@ function App() {
   return (
     <div className="container">
       <div className="card" style={{ gridColumn: "1 / -1" }}>
-        <h3>MFS BTL Semi / Full Commercial Calculator</h3>
-        
-        {/* ADDED LINKS HERE */}
-        <div className="top-links">
-          <a href="https://www.mfsuk.com/buy-to-let-mortgage-criteria/" target="_blank" rel="noopener noreferrer">BTL Residential Criteria</a>
-          <a href="https://www.mfsuk.com/pdf/btl-product-guide-client.pdf" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
-        </div>
+        <div className="header-container">
+    <h3>MFS BTL Semi / Full Commercial Calculator</h3>
+    <div className="top-links">
+        <a href="https://www.mfsuk.com/buy-to-let-mortgage-criteria/" target="_blank" rel="noopener noreferrer">BTL Residential Criteria</a>
+        <a href="https://www.mfsuk.com/pdf/btl-product-guide-client.pdf" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
+    </div>
+</div>
 
         <div className="note" style={{ marginBottom: 8 }}>
           Tier is calculated automatically from the inputs below. Current:{" "}

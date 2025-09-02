@@ -396,10 +396,10 @@ function App() {
 
           {/* Right side: Links and Exclusions */}
           <div className="top-right-container">
-            <div className="top-right-links">
-              <a href="https://example.com/btl-prime-criteria" target="_blank" rel="noopener noreferrer">BTL Residential Criteria</a>
-              <a href="https://example.com/btl-prime-product-guide" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
-            </div>
+            <div className="top-links">
+          <a href="https://www.mfsuk.com/buy-to-let-mortgage-criteria/" target="_blank" rel="noopener noreferrer">BTL Residential Criteria</a>
+          <a href="https://www.mfsuk.com/pdf/btl-product-guide-client.pdf" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
+        </div>
             <div className="top-right-exclusions">
               EXCLUSIONS
               <div className="exclusion-list">

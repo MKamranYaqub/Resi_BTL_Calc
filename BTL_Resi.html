@@ -25,15 +25,19 @@
     }
     
     /* ADDED FOR TOP-RIGHT LINKS */
-    .top-links {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      display: flex;
-      gap: 12px;
-      font-size: 14px;
-      font-weight: bold;
-    }
+       .header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px; /* adds space between header and content */
+}
+
+.top-links {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: bold;
+}
     .top-links a {
       color: #0d9488;
       text-decoration: none;

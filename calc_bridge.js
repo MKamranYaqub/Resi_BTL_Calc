@@ -113,17 +113,18 @@ const PillHeader = ({ children, className = "" }) => (
 
 // A single row with 3 cells: Label | Fixed | Variable
 const ResultRow = ({ label, fixed, variable }) => (
-  <div className="grid grid-cols-[1fr,1fr,1fr] gap-2 px-2">
-    <div className="m-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium flex items-center">
-      {label}
-    </div>
-    <div className="m-1 px-3 py-2 bg-gray-100 text-gray-800 rounded-md text-sm font-semibold text-center">
-      {fixed}
-    </div>
-    <div className="m-1 px-3 py-2 bg-gray-100 text-gray-800 rounded-md text-sm font-semibold text-center">
-      {variable}
-    </div>
+  <div className="grid grid-cols-1 md:grid-cols-[1fr,1fr,1fr] gap-2 px-2">
+  <div className="m-1 px-3 py-2 bg-gray-200 text-gray-800 font-semibold border-r border-gray-300 rounded-md text-sm flex items-center">
+    {label}
   </div>
+  <div className="m-1 px-3 py-2 bg-gray-100 text-gray-800 rounded-md text-sm font-semibold text-center">
+    {fixed}
+  </div>
+  <div className="m-1 px-3 py-2 bg-gray-100 text-gray-800 rounded-md text-sm font-semibold text-center">
+    {variable}
+  </div>
+</div>
+
 );
 
 // The main application component for the Bridging Calculator.

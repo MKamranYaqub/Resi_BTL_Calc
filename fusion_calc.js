@@ -243,145 +243,173 @@ const handleSendToZapier = async () => {
   };
 
   return (
-    <div className="container">
-      <div className="card">
-        <h3>MFS Fusion Calculator</h3>
-        <div class="top-links">
-           <a href="https://www.mfsuk.com/bridging-loan-criteria/" target="_blank" rel="noopener noreferrer">Fusion Criteria</a>
-          <a href="https://www.mfsuk.com/pdf/lending-guide-client.pdf" target="_blank" rel="noopener noreferrer">Fusion Product Guide</a>
-        </div>
-         {/* ADDED LINE HERE */}
-    <hr class="section-divider" />
-        {/* ADDED HEADING HERE */}
-        <h4>Loan Details</h4>
-        <div className="input-grid">
-          <div className="field">
-            <label>Property Type</label>
-            <select value={propertyType} onChange={(e) => setPropertyType(e.target.value)}>
-              <option>Residential</option>
-              <option>Semi / Full Commercial</option>
-            </select>
-          </div>
-          <div className="field">
-            <label>Property Value (£)</label>
-            <input type="number" placeholder="e.g. 1000000" value={propertyValue} onChange={(e) => setPropertyValue(e.target.value)} />
-          </div>
-          <div className="field">
-            <label>Use Specific Net Loan?</label>
-            <select value={useSpecificNet} onChange={(e) => setUseSpecificNet(e.target.value)}>
-              <option>No</option>
-              <option>Yes</option>
-            </select>
-          </div>
-          {useSpecificNet === 'Yes' ? (
-            <div className="field">
-              <label>Specific Net Loan (£)</label>
-              <input type="number" placeholder="e.g. 450000" value={specificNetLoan} onChange={(e) => setSpecificNetLoan(e.target.value)} />
-            </div>
-          ) : (
-            <div className="field">
-              <label>Gross Loan (£)</label>
-              <input type="number" placeholder="e.g. 750000" value={grossLoanInput} onChange={(e) => setGrossLoanInput(e.target.value)} />
-              <div className="field-helper">Product is selected automatically based on this amount.</div>
-            </div>
-          )}
-          <div className="field">
-            <label>Months to be Rolled</label>
-            <select value={rolledMonths} onChange={(e) => setRolledMonths(e.target.value)}>
-              {[...Array(7).keys()].map(i => <option key={i+6}>{i + 6}</option>)}
-            </select>
-            <div className="field-helper">Interest for these months is added to the loan.</div>
-          </div>
-          <div className="field">
-              <label>Deferred Interest</label>
-              <div className="slider-container">
-                  <input type="range" min="0" max="0.02" step="0.0005" value={deferredInterest} onChange={e => setDeferredInterest(parseFloat(e.target.value))} />
-                  <span className="slider-value">{fmtPct(deferredInterest)}</span>
+    <div className="container p-4">
+      <div className="card mb-4">
+        
+<div className="p-4">
+  <div className="header-container">
+    <h3>MFS Fusion Calculator</h3>
+    <div className="top-links">
+       <a href="https://www.mfsuk.com/bridging-loan-criteria/" target="_blank" rel="noopener noreferrer">Fusion Criteria</a>
+      <a href="https://www.mfsuk.com/pdf/lending-guide-client.pdf" target="_blank" rel="noopener noreferrer">Fusion Product Guide</a>
+    </div>
+  </div>
+           {/* ADDED LINE HERE */}
+      <hr className="section-divider" />
+          {/* ADDED HEADING HERE */}
+          <h4>Loan Details</h4>
+          <div className="row g-3">
+            <div className="col-lg-3 col-md-6 col-12">
+              <div className="field">
+                <label className="form-label">Property Type</label>
+                <select className="form-select" value={propertyType} onChange={(e) => setPropertyType(e.target.value)}>
+                  <option>Residential</option>
+                  <option>Semi / Full Commercial</option>
+                </select>
               </div>
-          </div>
-          <div className="field" style={{ gridColumn: 'span 2', justifySelf: 'end', marginTop: '1rem' }}>
-              <div style={{ background: '#fcf8f9ff', border: '1px solid #0e6de9ff', borderRadius: '8px', padding: '0.75rem 1rem', fontSize: '0.8rem', color: '#475569' }}>
-                  <div><b>Fusion Standard:</b> £100k - £3m</div>
-                  <div><b>Fusion Large:</b> £3m - £20m</div>
-                  
+            </div>
+            <div className="col-lg-3 col-md-6 col-12">
+              <div className="field">
+                <label className="form-label">Property Value (£)</label>
+                <input type="number" className="form-control" placeholder="e.g. 1000000" value={propertyValue} onChange={(e) => setPropertyValue(e.target.value)} />
               </div>
+            </div>
+            <div className="col-lg-3 col-md-6 col-12">
+              <div className="field">
+                <label className="form-label">Use Specific Net Loan?</label>
+                <select className="form-select" value={useSpecificNet} onChange={(e) => setUseSpecificNet(e.target.value)}>
+                  <option>No</option>
+                  <option>Yes</option>
+                </select>
+              </div>
+            </div>
+            {useSpecificNet === 'Yes' ? (
+              <div className="col-lg-3 col-md-6 col-12">
+                <div className="field">
+                  <label className="form-label">Specific Net Loan (£)</label>
+                  <input type="number" className="form-control" placeholder="e.g. 450000" value={specificNetLoan} onChange={(e) => setSpecificNetLoan(e.target.value)} />
+                </div>
+              </div>
+            ) : (
+              <div className="col-lg-3 col-md-6 col-12">
+                <div className="field">
+                  <label className="form-label">Gross Loan (£)</label>
+                  <input type="number" className="form-control" placeholder="e.g. 750000" value={grossLoanInput} onChange={(e) => setGrossLoanInput(e.target.value)} />
+                  <div className="field-helper form-text">Product is selected automatically based on this amount.</div>
+                </div>
+              </div>
+            )}
+            <div className="col-lg-3 col-md-6 col-12">
+              <div className="field">
+                <label className="form-label">Months to be Rolled</label>
+                <select className="form-select" value={rolledMonths} onChange={(e) => setRolledMonths(e.target.value)}>
+                  {[...Array(7).keys()].map(i => <option key={i+6}>{i + 6}</option>)}
+                </select>
+                <div className="field-helper form-text">Interest for these months is added to the loan.</div>
+              </div>
+            </div>
+            <div className="col-lg-3 col-md-6 col-12">
+              <div className="field">
+                <label className="form-label">Deferred Interest</label>
+                <div className="slider-container">
+                    <input type="range" className="form-range" min="0" max="0.02" step="0.0005" value={deferredInterest} onChange={e => setDeferredInterest(parseFloat(e.target.value))} />
+                    <span className="slider-value">{fmtPct(deferredInterest)}</span>
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-6 col-md-12 col-12 ms-auto">
+                 <div className="p-3 bg-light border rounded" style={{ maxWidth: '300px' }}>
+                    <div><b>Fusion Standard:</b> £100k - £3m</div>
+                    <div><b>Fusion Large:</b> £3m - £20m</div>
+                </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="card">
-        <h4>Email This Quote</h4>
-        <div className="input-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', alignItems: 'flex-end' }}>
-          <div className="field" style={{ gridColumn: 'span 2' }}>
-            <label>Client Name</label>
-            <input type="text" placeholder="e.g. Jane Doe" value={clientName} onChange={e => setClientName(e.target.value)} />
+      <div className="card mb-4">
+        <div className="p-4">
+          <h4>Email This Quote</h4>
+          <div className="row g-3 align-items-end">
+            <div className="col-lg-4 col-md-6 col-12">
+              <div className="field">
+                <label className="form-label">Client Name</label>
+                <input type="text" className="form-control" placeholder="e.g. Jane Doe" value={clientName} onChange={e => setClientName(e.target.value)} />
+              </div>
+            </div>
+            <div className="col-lg-4 col-md-6 col-12">
+              <div className="field">
+                <label className="form-label">Contact Number</label>
+                <input type="tel" className="form-control" placeholder="e.g. 07123456789" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
+              </div>
+            </div>
+            <div className="col-lg-4 col-md-6 col-12">
+              <div className="field">
+                <label className="form-label">Client Email</label>
+                <input type="email" className="form-control" placeholder="e.g. jane.doe@example.com" value={clientEmail} onChange={e => setClientEmail(e.target.value)} />
+              </div>
+            </div>
+            <div className="col-12">
+              <button onClick={handleSendToZapier} className="btn btn-primary w-100" disabled={sending || !calculation}>
+                {sending ? 'Sending...' : 'Send Email'}
+              </button>
+            </div>
           </div>
-          <div className="field">
-            <label>Contact Number</label>
-            <input type="tel" placeholder="e.g. 07123456789" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
-          </div>
-          <div className="field">
-            <label>Client Email</label>
-            <input type="email" placeholder="e.g. jane.doe@example.com" value={clientEmail} onChange={e => setClientEmail(e.target.value)} />
-          </div>
-          <div className="field">
-            <button onClick={handleSendToZapier} className="primaryBtn" disabled={sending || !calculation}>
-              {sending ? 'Sending...' : 'Send Email'}
-            </button>
-          </div>
+          {emailStatus === "success" && (
+              <div className="alert alert-success mt-4" role="alert">
+                Email sent successfully!
+              </div>
+          )}
+          {emailStatus === "error" && (
+              <div className="alert alert-danger mt-4" role="alert">
+                Failed to send email. Please try again later.
+              </div>
+          )}
         </div>
-        {emailStatus === "success" && (
-            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: '8px' }}>
-              Email sent successfully!
-            </div>
-        )}
-        {emailStatus === "error" && (
-            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#fff1f2', border: '1px solid #fecaca', color: '#be123c', borderRadius: '8px' }}>
-              Failed to send email. Please try again later.
-            </div>
-        )}
       </div>
       
-      <div className="card">
-        <h4>Summary</h4>
-        {calculation ? (
-          <div className="summary-table" style={{ gridTemplateColumns: '1fr 1.5fr' }}>
-            <div className="summary-header label-header" style={{ gridColumn: '1 / -1', background: headerColors[calculation.productColor] || '#3001ffff', justifyContent: 'center' }}>
-              {calculation.productName}
+      <div className="card mb-4">
+        <div className="p-4">
+          <h4>Summary</h4>
+          {calculation ? (
+            <div className="summary-table">
+              <div className="summary-header label-header" style={{ gridColumn: '1 / -1', background: headerColors[calculation.productColor] || '#3001ffff', justifyContent: 'center' }}>
+                {calculation.productName}
+              </div>
+              {[
+                { label: 'Full Rate', key: 'fullRate', format: (val) => `${fmtPct(calculation.couponRate)} + BBR` },
+                { label: 'Pay Rate', key: 'payRate', format: (val) => `${fmtPct(calculation.couponRate - calculation.deferredRate)} + BBR` },
+                { label: 'Gross Loan', key: 'grossLoan', format: fmtMoney0 },
+                { label: 'Net Loan', key: 'netLoan', format: fmtMoney0 },
+                { label: 'LTV (Loan to Value)', key: 'ltv', format: fmtPct },
+                { label: 'Arrangement Fee', key: 'arrangementFee', format: (val) => `${fmtMoney0(val)} (${fmtPct(ARRANGEMENT_FEE_PCT)})` },
+                { label: 'Term', key: 'term' },
+                { label: 'Service Months', key: 'serviceMonths' },
+                { label: 'Rolled Cost', key: 'rolledCost', format: fmtMoney0 },
+                { label: 'Deferred Cost', key: 'deferredCost', format: fmtMoney0 },
+                { label: 'Total Interest', key: 'totalInterest', format: fmtMoney0 },
+                { label: 'Monthly Direct Debit', key: 'monthlyDirectDebit', format: (val) => `${fmtMoney0(val)} from month ${calculation.rm + 1}` },
+                { label: 'ERC', key: 'erc' },
+                { label: 'Max Product LTV', key: 'maxProductLtv', format: fmtPct },
+              ].map(({ label, key, format }) => (
+                <React.Fragment key={key}>
+                  <div className="summary-cell label-cell">{label}</div>
+                  <div className="summary-cell value-cell" style={{ justifyContent: 'center' }}>
+                    {format ? format(calculation[key]) : calculation[key]}
+                  </div>
+                </React.Fragment>
+              ))}
             </div>
-            {[
-              { label: 'Full Rate', key: 'fullRate', format: (val) => `${fmtPct(calculation.couponRate)} + BBR` },
-              { label: 'Pay Rate', key: 'payRate', format: (val) => `${fmtPct(calculation.couponRate - calculation.deferredRate)} + BBR` },
-              { label: 'Gross Loan', key: 'grossLoan', format: fmtMoney0 },
-              { label: 'Net Loan', key: 'netLoan', format: fmtMoney0 },
-              { label: 'LTV (Loan to Value)', key: 'ltv', format: fmtPct },
-              { label: 'Arrangement Fee', key: 'arrangementFee', format: (val) => `${fmtMoney0(val)} (${fmtPct(ARRANGEMENT_FEE_PCT)})` },
-              { label: 'Term', key: 'term' },
-              { label: 'Service Months', key: 'serviceMonths' },
-              { label: 'Rolled Cost', key: 'rolledCost', format: fmtMoney0 },
-              { label: 'Deferred Cost', key: 'deferredCost', format: fmtMoney0 },
-              { label: 'Total Interest', key: 'totalInterest', format: fmtMoney0 },
-              { label: 'Monthly Direct Debit', key: 'monthlyDirectDebit', format: (val) => `${fmtMoney0(val)} from month ${calculation.rm + 1}` },
-              { label: 'ERC', key: 'erc' },
-              { label: 'Max Product LTV', key: 'maxProductLtv', format: fmtPct },
-            ].map(({ label, key, format }) => (
-              <React.Fragment key={key}>
-                <div className="summary-cell label-cell">{label}</div>
-                <div className="summary-cell value-cell" style={{ justifyContent: 'center' }}>
-                  {format ? format(calculation[key]) : calculation[key]}
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '20px', background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', color: '#b45309' }}>
-            {errorMessage || "Please enter the loan details to see a summary."}
-          </div>
-        )}
+          ) : (
+            <div className="alert alert-warning text-center">
+              {errorMessage || "Please enter the loan details to see a summary."}
+            </div>
+          )}
+        </div>
       </div>
       
-      <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem', marginTop: '-8px' }}>
-          <div style={{ marginBottom: '8px' }}>
+      <div className="text-center text-muted">
+          <div className="mb-2">
             <b>BBR (Bank of England Base Rate)</b> is currently <b>{fmtPct(BBR)}</b>
           </div>
       </div>
