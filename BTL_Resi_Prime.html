@@ -35,32 +35,35 @@
         flex-wrap: wrap;
         margin-bottom: 24px; /* Space between header and form fields */
       }
-
-      /* Left side: Heading and tier info */
-      .calculator-header {
-        flex-basis: 60%; /* Adjust width as needed */
-      }
-      .calculator-header h3 {
-        margin: 0 0 4px 0;
-      }
-
-      /* Right side: Links and exclusions */
-      .top-right-container {
+      
+      /* Left side: Links and heading */
+      .top-left-container {
         display: flex;
         flex-direction: column;
-        align-items: flex-end;
+        align-items: flex-start;
         gap: 12px;
       }
-      .top-right-links {
+      .top-left-links {
         display: flex;
         gap: 12px;
         font-size: 14px;
         font-weight: bold;
       }
-      .top-right-links a {
-        color: #0d9488;
-        text-decoration: none;
+      .top-left-links a {
+        color: #0004ff;
+        text-decoration: underline;
       }
+      .top-links {
+  display: flex;
+  gap: 16px; /* Adds space between the links */
+}
+
+.top-links a {
+  color: #2600ff; /* Sets the link color */
+  text-decoration: underline; /* Adds an underline for clarity */
+}
+      
+      /* Right side: Exclusions */
       .top-right-exclusions {
         background: #ffc107;
         color: #333;
@@ -70,10 +73,13 @@
         font-weight: bold;
         text-align: center;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        width: 320px;
+        flex-shrink: 0;
       }
       .top-right-exclusions .exclusion-list {
         display: flex;
         flex-wrap: wrap;
+        justify-content: space-around;
         gap: 0 10px;
         margin-top: 4px;
       }
@@ -99,14 +105,13 @@
         max-width: 1200px;
         margin: 0 auto;
       }
-
+      
       .card {
         background: var(--card);
         border: 1px solid var(--border);
         border-radius: 16px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         padding: 16px;
-        position: relative; /* REQUIRED for positioning .top-links */
       }
       h3 {
         margin: 0 0 12px 0;
@@ -129,17 +134,6 @@
   margin-bottom: 12px; /* adds space between header and content */
 }
 
-.top-links {
-  display: flex;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: bold;
-}
-    .top-links a {
-      color: #2600ff;
-      text-decoration: underline;
-
-    }
       .matrix .mRowFull {
         grid-column: 1 / -1;
         justify-content: center;

@@ -389,7 +389,6 @@ function App() {
         {/* New flexbox container for header elements */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           
-          {/* Left side: Heading */}
           
 
           {/* Right side: Links and Exclusions */}
@@ -399,8 +398,10 @@ function App() {
           <a href="https://www.mfsuk.com/pdf/btl-product-guide-client.pdf" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
         </div>
         <div>
+          <br></br>
             <h3>MFS BTL Residential Calculator (Core Product)</h3>
           </div>
+          <br></br>
             <div className="top-right-exclusions">
               EXCLUSIONS
               <div className="exclusion-list">
