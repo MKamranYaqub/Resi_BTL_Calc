@@ -127,16 +127,16 @@ function App() {
 
     if (adverse === "Yes") {
       const advMapMA = {
-        "0 in 24": 1, "0 in 18": 1, "2 in 18, 0 in 6": 2, "Other, more recent": 2,
+        "No": 1, "2 in 18, 0 in 6": 1, "Other, more recent": 2,
       };
       const advMapUA = {
-        "0 in 24": 1, "0 in 12": 1, "2 in last 18": 2, "Other, more recent": 2,
+        "No": 1, "2 in last 18": 1, "Other, more recent": 2,
       };
       const advMapCD = {
-        "0 in 24": 1, "0 in 18": 1, "2 in 18, 0 in 6": 2, "Other, more recent": 2,
+        "No": 1, "2 in 18, 0 in 6": 1, "Other, more recent": 2,
       };
       const advMapBank = {
-        Never: 1, "Discharged >3yrs": 1, "All considered by referral": 2,
+        Never: 1, "Discharged >3yrs": 1, "Other, more recent": 2,
       };
       const adverseTier = Math.max(
         advMapMA[mortArrears] || 1,
@@ -491,9 +491,9 @@ function App() {
                   value={mortArrears}
                   onChange={(e) => setMortArrears(e.target.value)}
                 >
-                  <option>0 in 24</option>
-                  <option>0 in 18</option>
+                  <option>No</option>
                   <option>2 in 18, 0 in 6</option>
+                  <option>Other, more recent</option>
                 </select>
               </div>
 
@@ -503,9 +503,9 @@ function App() {
                   value={unsArrears}
                   onChange={(e) => setUnsArrears(e.target.value)}
                 >
-                  <option>0 in 24</option>
-                  <option>0 in 12</option>
+                  <option>No</option>
                   <option>2 in last 18</option>
+                  <option>Other, more recent</option>
                 </select>
               </div>
 
@@ -515,9 +515,9 @@ function App() {
                   value={ccjDefault}
                   onChange={(e) => setCcjDefault(e.target.value)}
                 >
-                  <option>0 in 24</option>
-                  <option>0 in 18</option>
+                  <option>No</option>
                   <option>2 in 18, 0 in 6</option>
+                  <option>Other, more recent</option>
                 </select>
               </div>
 
@@ -529,7 +529,7 @@ function App() {
                 >
                   <option>Never</option>
                   <option>Discharged &gt;3yrs</option>
-                  <option>All considered by referral</option>
+                  <option>Other, more recent</option>
                 </select>
               </div>
             </>
