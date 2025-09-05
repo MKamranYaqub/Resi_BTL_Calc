@@ -21,35 +21,46 @@ window.FUSION_LTV_CAPS = {
 // NEW Product Structure with Loan Size Bands
 window.FUSION_PRODUCTS = {
   Residential: {
-    Standard: {
+    Small: {
       rate: 0.0479,
       minLoan: 100000,
       maxLoan: 3000000,
     },
+    Medium: {
+      rate: 0.0569,
+      minLoan: 3000001,
+      maxLoan: 10000000,
+    },
+    
     Large: {
       rate: 0.0599,
-      minLoan: 3000001,
-      maxLoan: 20000000,
+      minLoan: 10000001,
+      maxLoan: 200000000,
     },
     
   },
   "Semi / Full Commercial": {
-    Standard: {
-      rate: 0.0529,
+    Small: {
+      rate: 0.0499,
       minLoan: 100000,
       maxLoan: 3000000,
     },
+    Medium: {
+      rate: 0.0579,
+      minLoan: 3000001,
+      maxLoan: 10000000,
+    },
     
     Large: {
-      rate: 0.0649,
-      minLoan: 3000001,
-      maxLoan: 20000000,
+      rate: 0.0629,
+      minLoan: 10000001,
+      maxLoan: 200000000,
     },
   },
 };
 
 // Early Repayment Charge (ERC) Details
-window.FUSION_ERC = "Yr1 6% | Yr2 3% (25% ERC free after 6m, no ERC after 21m)";
+window.FUSION_ERC = "Yr1 3% | Yr2 1.5% (25% ERC free after 6m, no ERC after 21m)";
 
 
 // EmailJS Configuration

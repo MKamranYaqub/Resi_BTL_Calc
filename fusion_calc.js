@@ -325,8 +325,9 @@ const handleSendToZapier = async () => {
             </div>
             <div className="col-lg-6 col-md-12 col-12 ms-auto">
                  <div className="p-3 bg-light border rounded" style={{ maxWidth: '300px' }}>
-                    <div><b>Fusion Standard:</b> £100k - £3m</div>
-                    <div><b>Fusion Large:</b> £3m - £20m</div>
+                    <div><b>Fusion Small:</b> £100k - £3m</div>
+                    <div><b>Fusion Medium:</b> £3m - £10m</div>
+                    <div><b>Fusion Large:</b> £10m+</div>
                 </div>
             </div>
           </div>
