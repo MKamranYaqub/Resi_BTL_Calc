@@ -6,10 +6,10 @@ function SectionTitle({ children }) {
     <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
       <div
         style={{
-          fontSize: 12,
+          fontSize: 15,
           fontWeight: 700,
           color: "#334155",
-          textTransform: "uppercase",
+          textTransform: "normalize",
           letterSpacing: "0.04em",
           marginTop: 8,
           marginBottom: 4,
@@ -60,9 +60,11 @@ function formatERC(productType) {
 
 /* ----------------------------------- App ----------------------------------- */
 function App() {
+  
   const [productType, setProductType] = useState("2yr Fix");
   const [useSpecificNet, setUseSpecificNet] = useState("No");
   const [specificNetLoan, setSpecificNetLoan] = useState("");
+  
 
   // Client / Lead
   const [clientName, setClientName] = useState("");
@@ -70,6 +72,8 @@ function App() {
   const [clientEmail, setClientEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState(null); // Add this line
+  // DELETE THIS LINE from inside handleSendQuote
+const [validationError, setValidationError] = useState("");
 
   // Property & income
   const [propertyValue, setPropertyValue] = useState("");
@@ -292,10 +296,28 @@ function App() {
 
   /* --------------------------- Send Quote via Email --------------------------- */
   const handleSendQuote = async () => {
-    if (!canShowMatrix || !bestSummary) {
-      alert("Please ensure the calculation is complete before sending.");
-      return;
-    }
+  // Reset previous errors first
+  setValidationError("");
+  setSendStatus(null);
+
+  // Check if a calculation is ready to be sent
+  if (!canShowMatrix || !bestSummary) {
+    setValidationError("Please complete the calculation fields before sending email.");
+    return;
+  }
+
+  // VALIDATION: Check for empty name, phone, and email fields
+  if (!clientName.trim() || !clientPhone.trim() || !clientEmail.trim()) {
+    setValidationError("Please complete all client fields before sending email.");
+    return; // Stop the function here if fields are empty
+  }
+
+  // VALIDATION: Check for a valid email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(clientEmail)) {
+    setValidationError("Please enter a valid email address.");
+    return; // Stop the function here if email is invalid
+  }
 
     setSending(true);
     setSendStatus(null);
@@ -327,6 +349,7 @@ function App() {
       };
 
       let success = false;
+    
       
       // --- 1) TRY JSON POST (Primary Method) ---
       try {
@@ -393,29 +416,19 @@ function App() {
 
           {/* Right side: Links and Exclusions */}
           <div className="top-right-container">
-            <div className="top-links">
-          <a href="https://www.mfsuk.com/buy-to-let-mortgage-criteria/" target="_blank" rel="noopener noreferrer">BTL Residential Criteria</a>
-          <a href="https://www.mfsuk.com/pdf/btl-product-guide-client.pdf" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
-        </div>
-        <div>
-          <br></br>
-            <h3>MFS BTL Residential Calculator (Core Product)</h3>
-          </div>
-          <br></br>
+            
             <div className="top-right-exclusions">
-              EXCLUSIONS
+              Exclusions
               <div className="exclusion-list">
-                <ul style={{ margin: 0, padding: '0 0 0 16px', listStyleType: 'disc'}}>
-                  <li>Holiday Let</li>
-                  <li>First Time Buyer</li>
-                  <li>Offshore Company</li>
-                </ul>
-                <ul style={{ margin: 0, padding: '0 0 0 16px', listStyleType: 'disc'}}>
-                  <li>Foreign National</li>
-                  <li>Bankruptcy</li>
-                  <li>Flat above commercial</li>
-                </ul>
-              </div>
+  <ul>
+    <li>Holiday Let</li>
+    <li>First Time Buyer</li>
+    <li>Offshore Company</li>
+    <li>Foreign National</li>
+    <li>Bankruptcy</li>
+    <li>Flat above commercial</li>
+  </ul>
+</div>
             </div>
           </div>
         </div>
@@ -555,22 +568,22 @@ function App() {
 
           <div className="profile-grid property-product" style={{ gridColumn: "1 / -1" }}>
             <div className="field">
-              <label>Property Value (£)</label>
+              <label>Property Value</label>
               <input
                 type="number"
                 inputMode="decimal"
-                placeholder="e.g. 350000"
+                placeholder="e.g. 350,000"
                 value={propertyValue}
                 onChange={(e) => setPropertyValue(e.target.value)}
               />
             </div>
 
             <div className="field">
-              <label>Monthly Rent (£)</label>
+              <label>Monthly Rent</label>
               <input
                 type="number"
                 inputMode="decimal"
-                placeholder="e.g. 1600"
+                placeholder="e.g. 1,600"
                 value={monthlyRent}
                 onChange={(e) => setMonthlyRent(e.target.value)}
               />
@@ -586,11 +599,11 @@ function App() {
 
             {useSpecificNet === "Yes" && (
               <div className="field">
-                <label>Specific Net Loan (£)</label>
+                <label>Specific Net Loan</label>
                 <input
                   type="number"
                   inputMode="decimal"
-                  placeholder="e.g. 200000"
+                  placeholder="e.g. 200,000"
                   value={specificNetLoan}
                   onChange={(e) => setSpecificNetLoan(e.target.value)}
                 />
@@ -613,7 +626,7 @@ function App() {
 
       {/* ---------------------- Client Details & Lead (full) --------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1" }}>
-        <h3>Email This Quote</h3>
+        <SectionTitle>Email this quote</SectionTitle>
         <div className="profile-grid">
           <div className="field">
             <label>Client Name</label>
@@ -629,9 +642,12 @@ function App() {
             <label>Contact Number</label>
             <input
               type="tel"
+               inputMode="numeric"
               placeholder="e.g. 07123 456789"
               value={clientPhone}
-              onChange={(e) => setClientPhone(e.target.value)}
+              onChange={(e) => {const numericValue = e.target.value.replace(/\D/g, '');
+      setClientPhone(numericValue);
+    }}
             />
           </div>
 
@@ -651,11 +667,17 @@ function App() {
               className="primaryBtn" 
               disabled={sending || !canShowMatrix}
             >
-              {sending ? "Sending…" : "Send Quote via Email"}
+              {sending ? "Sending…" : "Send Email"}
             </button>
             <div className="note"></div>
           </div>
         </div>
+         {/* ADD THIS BLOCK HERE TO DISPLAY THE ERROR */}
+  {validationError && (
+    <div style={{ marginTop: "16px", color: "#b91c1c", fontWeight: "50-0", textAlign: "center" }}>
+      {validationError}
+    </div>
+  )}
         {sendStatus === "success" && (
           <div style={{ marginTop: "16px", padding: "16px", background: "#f0fdf4", border: "1px solid #4ade80", color: "#166534", borderRadius: "8px" }}>
             Email sent successfully!
@@ -674,7 +696,7 @@ function App() {
           className="card"
           style={{
             gridColumn: "1 / -1",
-            background: "#8a1746",
+            background: "#008891",
             color: "#fff",
             padding: 0,
             overflow: "hidden",
@@ -710,7 +732,7 @@ function App() {
             <div
               style={{
                 marginTop: 8,
-                background: "#791640",
+                background: "#00285b",
                 color: "#ffffff",
                 borderRadius: 8,
                 padding: "8px 12px",
@@ -757,7 +779,7 @@ function App() {
                       }}
                     >
                       {anyBelowMin &&
-                        "⚠️ One or more gross loans are below the £150,000 minimum threshold. "}
+                        "One or more gross loans are below the &pound;150,000 minimum threshold. "}
                       {anyAtMaxCap &&
                         "ⓘ One or more gross loans are capped at the £3,000,000 maximum."}
                     </div>
@@ -771,7 +793,7 @@ function App() {
                       gridTemplateRows: `
                         55px
                         48px 48px 48px 48px 48px
-                        48px 48px 48px 65px 48px 
+                        48px 48px 48px 80px 48px 
 
                       `,
                     }}
@@ -814,7 +836,7 @@ function App() {
                           gridTemplateRows: `
                             55px
                             48px 48px 48px 48px 48px
-                            48px 48px 48px 65px 48px 
+                            48px 48px 48px 80px 48px 
                           `,
                         }}
                       >

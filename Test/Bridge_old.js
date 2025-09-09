@@ -38,7 +38,7 @@ const isValidPhone = (v) => {
 const SectionTitle = ({ children }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 col-span-full">
     <div className="md:col-span-2 lg:col-span-4 mt-4">
-      <h2 className="text-sm font-bold normal text-gray-1000 tracking-wider mb-2">
+      <h2 className="text-sm font-bold normal text-gray-700 tracking-wider mb-2">
         {children}
       </h2>
       <hr className="border-t border-gray-300 mb-4" />
@@ -68,7 +68,7 @@ const InputField = ({
       max={max}
       disabled={disabled}
       placeholder={placeholder}
-      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-[#FFDDAD] disabled:opacity-50 disabled:bg-gray-200 font-['Tahoma']"
+      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-[#FFDDAD] disabled:opacity-50 disabled:bg-gray-200"
     />
     {helperText && (
       <div className="bg-gray-50 rounded-md p-2 mt-2 text-xs text-gray-600">
@@ -93,7 +93,7 @@ const SelectField = ({
       value={value || ""}
       onChange={onChange}
       disabled={disabled}
-      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-[#FFDDAD] disabled:opacity-50 disabled:bg-gray-200 font-['Tahoma']"
+      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-[#FFDDAD] disabled:opacity-50 disabled:bg-gray-200"
     >
       {options.map((opt) => (
         <option key={opt} value={opt}>
@@ -774,7 +774,7 @@ function App() {
                   value={firstChargeDisplay}
                   onChange={handleFirstChargeChange}
                   placeholder="e.g. 200,000"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-[#FFDDAD] disabled:opacity-50 bg-red-50 font-['Tahoma']"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-[#FFDDAD] disabled:opacity-50 bg-red-50"
                 />
               </div>
             )}

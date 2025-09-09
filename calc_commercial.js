@@ -6,10 +6,10 @@ function SectionTitle({ children }) {
     <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
       <div
         style={{
-          fontSize: 12,
+          fontSize: 15,
           fontWeight: 700,
           color: "#334155",
-          textTransform: "uppercase",
+          textTransform: "normal",
           letterSpacing: "0.04em",
           marginTop: 8,
           marginBottom: 4,
@@ -76,6 +76,16 @@ function App() {
   // Property & income
   const [propertyValue, setPropertyValue] = useState("");
   const [monthlyRent, setMonthlyRent] = useState("");
+  const [validationError, setValidationError] = useState("");
+
+const isValidEmail = (v) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
+
+const cleanDigits = (v) => String(v).replace(/[^\d]/g, "");   // keep digits only
+const isValidPhone = (v) => {
+  const d = cleanDigits(v);
+  return d.length >= 10 && d.length <= 15; // UK/intl tolerances
+};
 
   // Property drivers
   const [hmo, setHmo] = useState("No (Tier 1)");
@@ -295,12 +305,30 @@ function App() {
   ]);
 
   /* --------------------------- Send Quote via Zapier ---------------------------- */
+  /* --------------------------- Send Quote via Email --------------------------- */
   const handleSendQuote = async () => {
-    if (!canShowMatrix || !bestSummary) {
-      alert("Please ensure the calculation is complete before sending.");
-      return;
-    }
-    setSending(true);
+  // Reset previous errors first
+  setValidationError("");
+  setSendStatus(null);
+
+  // Check if a calculation is ready to be sent
+  if (!canShowMatrix || !bestSummary) {
+    setValidationError("Please complete the calculation fields before sending email.");
+    return;
+  }
+
+  // VALIDATION: Check for empty name, phone, and email fields
+  if (!clientName.trim() || !clientPhone.trim() || !clientEmail.trim()) {
+    setValidationError("Please complete all client fields before sending email.");
+    return; // Stop the function here if fields are empty
+  }
+
+  // VALIDATION: Check for a valid email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(clientEmail)) {
+    setValidationError("Please enter a valid email address.");
+    return; // Stop the function here if email is invalid
+  }    setSending(true);
     setSendStatus(null); // Reset status on new attempt
 
     try {
@@ -388,16 +416,7 @@ function App() {
     <div className="container">
       <div className="card" style={{ gridColumn: "1 / -1" }}>
         
-    <div className="top-links">
-        <a href="https://www.mfsuk.com/buy-to-let-mortgage-criteria/" target="_blank" rel="noopener noreferrer">BTL Commercial Criteria</a>
-        <a href="https://www.mfsuk.com/pdf/btl-product-guide-client.pdf" target="_blank" rel="noopener noreferrer">BTL Product Guide</a>
-    </div>
     
-    <br></br>
-    <div className="header-container">
-    <h3>MFS BTL Semi / Full Commercial Calculator</h3>
-</div>
-
         <div className="note" style={{ marginBottom: 8 }}>
           Tier is calculated automatically from the inputs below. Current:{" "}
           <b>{tier}</b>
@@ -542,22 +561,22 @@ function App() {
             style={{ gridColumn: "1 / -1" }}
           >
             <div className="field">
-              <label>Property Value (£)</label>
+              <label>Property Value</label>
               <input
                 type="number"
                 inputMode="decimal"
-                placeholder="e.g. 350000"
+                placeholder="e.g. 350,000"
                 value={propertyValue}
                 onChange={(e) => setPropertyValue(e.target.value)}
               />
             </div>
 
             <div className="field">
-              <label>Monthly Rent (£)</label>
+              <label>Monthly Rent</label>
               <input
                 type="number"
                 inputMode="decimal"
-                placeholder="e.g. 1600"
+                placeholder="e.g. 1,600"
                 value={monthlyRent}
                 onChange={(e) => setMonthlyRent(e.target.value)}
               />
@@ -576,11 +595,11 @@ function App() {
 
             {useSpecificNet === "Yes" && (
               <div className="field">
-                <label>Specific Net Loan (£)</label>
+                <label>Specific Net Loan</label>
                 <input
                   type="number"
                   inputMode="decimal"
-                  placeholder="e.g. 200000"
+                  placeholder="e.g. 200,000"
                   value={specificNetLoan}
                   onChange={(e) => setSpecificNetLoan(e.target.value)}
                 />
@@ -610,8 +629,9 @@ function App() {
         </div>
       </div>
 
+      {/* ---------------------- Client Details & Lead (full) --------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1" }}>
-        <h3>Email This Quote</h3>
+        <h4>Email this Quote</h4>
         <div className="profile-grid">
           <div className="field">
             <label>Client Name</label>
@@ -626,11 +646,12 @@ function App() {
           <div className="field">
             <label>Contact Number</label>
             <input
-              type="tel"
-              placeholder="e.g. 07123 456789"
-              value={clientPhone}
-              onChange={(e) => setClientPhone(e.target.value)}
-            />
+  type="tel"
+  placeholder="e.g. 07123 456789"
+  value={clientPhone}
+  onChange={(e) => setClientPhone(cleanDigits(e.target.value))}
+  aria-invalid={validationError && !isValidPhone(clientPhone) ? "true" : "false"}
+/>
           </div>
 
           <div className="field">
@@ -649,11 +670,17 @@ function App() {
               className="primaryBtn"
               disabled={sending || !canShowMatrix}
             >
-              {sending ? "Sending…" : "Send Quote via Email"}
+              {sending ? "Sending…" : "Send Email"}
             </button>
             <div className="note"></div>
           </div>
         </div>
+        {/* ADD THIS BLOCK HERE TO DISPLAY THE ERROR */}
+  {validationError && (
+    <div style={{ marginTop: "16px", color: "#b91c1c", fontWeight: "50-0", textAlign: "center" }}>
+      {validationError}
+    </div>
+  )}
         {sendStatus === "success" && (
           <div style={{ marginTop: "16px", padding: "16px", background: "#f0fdf4", border: "1px solid #4ade80", color: "#166534", borderRadius: "8px" }}>
             Email sent successfully!
@@ -671,7 +698,7 @@ function App() {
           className="card"
           style={{
             gridColumn: "1 / -1",
-            background: "#8a1746",
+            background: "#008891",
             color: "#fff",
             padding: 0,
             overflow: "hidden",
@@ -707,7 +734,7 @@ function App() {
             <div
               style={{
                 marginTop: 8,
-                background: "#791640",
+                background: "#00285b",
                 color: "#ffffff",
                 borderRadius: 8,
                 padding: "8px 12px",
@@ -769,7 +796,7 @@ function App() {
                       gridTemplateRows: `
                         55px
                         48px 48px 48px 48px 48px
-                        48px 48px 48px 48px 48px 48px 48px
+                        48px 48px 48px 48px 48px 85px 48px
                       `,
                     }}
                   >
@@ -805,7 +832,7 @@ function App() {
                           gridTemplateRows: `
                             55px
                             48px 48px 48px 48px 48px
-                            48px 48px 48px 48px 48px 48px 48px
+                            48px 48px 48px 48px 48px 85px 48px
                           `,
                         }}
                       >

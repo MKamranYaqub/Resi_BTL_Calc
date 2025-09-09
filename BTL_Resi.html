@@ -205,7 +205,7 @@
       input[type="email"]:focus,
       input[type="tel"]:focus {
         border-color: var(--input-focus);
-        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
+        box-shadow: 0 0 0 3px #94ecf2;
       }
       
 
@@ -267,13 +267,13 @@
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       }
       .matrix .headGreen {
-        background: #16a34a;
+        background: #008891;
       }
       .matrix .headOrange {
-        background: #f59e0b;
+        background: #ED8B00;
       }
       .matrix .headTeal {
-        background: #0d9488;
+        background: #902057;
       }
       .matrix .headBlue {
         background: #0284c7;
@@ -333,12 +333,44 @@
         height: 38px;
         padding: 0 12px;
         border-radius: 8px;
-        border: 1px solid #0ea5e9;
-        background: #0ea5e9;
+        border: 1px solid #008891;
+        background: #008891;
         color: #fff;
         font-weight: 700;
         cursor: pointer;
       }
+:root {
+  --primary: #008891;
+  --primary-hover: #2DB0B9;   /* a touch darker */
+}
+
+/* Use the tokens on the base button */
+.primaryBtn {
+  background: var(--primary);
+  border-color: var(--primary);
+  transition: background-color .2s ease, border-color .2s ease,
+              box-shadow .15s ease, transform .15s ease;
+}
+
+/* Hover state */
+.primaryBtn:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  box-shadow: 0 6px 14px rgba(0, 136, 145, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Pressed state */
+.primaryBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 8px rgba(0, 136, 145, 0.2);
+}
+
+/* Keyboard focus */
+.primaryBtn:focus-visible {
+  outline: 3px solid #94ECF2;
+  outline-offset: 2px;
+}
 
       .card > .profile-grid {
         margin-top: 8px;
