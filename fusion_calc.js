@@ -358,7 +358,13 @@ function App() {
             <div className="col-lg-3 col-md-6 col-12">
               <div className="field">
                 <label className="form-label">Contact Number</label>
-                <input type="tel" className="form-control" placeholder="e.g. 07123456789" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
+                <input 
+  type="tel" 
+  className="form-control" 
+  placeholder="e.g. 07123 456789" 
+  value={clientPhone} 
+  onChange={e => setClientPhone(e.target.value.replace(/[^\d]/g, ''))}
+/>
               </div>
             </div>
             <div className="col-lg-3 col-md-6 col-12">
