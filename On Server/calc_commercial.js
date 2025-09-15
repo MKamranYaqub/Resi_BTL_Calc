@@ -9,7 +9,7 @@ function SectionTitle({ children }) {
           fontSize: 15,
           fontWeight: 700,
           color: "#334155",
-          textTransform: "normalize",
+          textTransform: "normal",
           letterSpacing: "0.04em",
           marginTop: 8,
           marginBottom: 4,
@@ -23,11 +23,10 @@ function SectionTitle({ children }) {
 }
 
 /* ----------------------------- GLOBAL CONSTANTS ---------------------------- */
-const MAX_ROLLED_MONTHS = 0; // Set to 0 as per new criteria
-const MAX_DEFERRED_FIX = 0; // Set to 0 as per new criteria
-const MAX_DEFERRED_TRACKER = 0; // Set to 0 as per new criteria
-const MIN_STRESS_RATE = window.MIN_STRESS_RATE; // New variable for min stress rate
-const SHOW_FEE_COLS = ["6", "4", "3", "2"];
+const MAX_ROLLED_MONTHS = 6;
+const MAX_DEFERRED_FIX = 0.0125; // 1.25%
+const MAX_DEFERRED_TRACKER = 0.015; // 1.50%
+const SHOW_FEE_COLS = ["6", "4", "2"];
 
 /* ------------------------------ UTIL FUNCTIONS ----------------------------- */
 const toNumber = (v) => {
@@ -37,199 +36,194 @@ const toNumber = (v) => {
 const fmtMoney0 = (n) =>
   n || n === 0
     ? Number(n).toLocaleString("en-GB", {
-      style: "currency",
-      currency: "GBP",
-      maximumFractionDigits: 0,
-    })
+        style: "currency",
+        currency: "GBP",
+        maximumFractionDigits: 0,
+      })
     : "—";
 const fmtPct = (p, dp = 2) =>
   p || p === 0 ? `${(Number(p) * 100).toFixed(dp)}%` : "—";
 
-/* Tier/LTV rule */
-function getMaxLTV(tier) {
-  return 0.75;
-}
 function formatRevertRate(tier) {
-  const add = window.REVERT_RATE_Prime?.[tier]?.add ?? 0;
+  const add = window.REVERT_RATE_Commercial?.[tier]?.add ?? 0;
   return add === 0 ? "MVR" : `MVR + ${(add * 100).toFixed(2)}%`;
 }
 function formatERC(productType) {
-  const ercArr = window.ERC_Prime?.[productType] ?? ["—"];
+  const ercArr = window.ERC_Commercial?.[productType] ?? ["—"];
   return ercArr.join(" / ");
+}
+
+function getMaxLTV(tier, flatAboveComm) {
+  if (tier === "Tier 2" || flatAboveComm === "Yes") {
+    return 0.7;
+  }
+  return 0.70;
 }
 
 /* ----------------------------------- App ----------------------------------- */
 function App() {
-  
   const [productType, setProductType] = useState("2yr Fix");
   const [useSpecificNet, setUseSpecificNet] = useState("No");
   const [specificNetLoan, setSpecificNetLoan] = useState("");
-  
 
   // Client / Lead
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [sending, setSending] = useState(false);
-  const [sendStatus, setSendStatus] = useState(null); // Add this line
-  // DELETE THIS LINE from inside handleSendQuote
-const [validationError, setValidationError] = useState("");
+  const [sendStatus, setSendStatus] = useState(null); // null | 'success' | 'error'
 
   // Property & income
   const [propertyValue, setPropertyValue] = useState("");
   const [monthlyRent, setMonthlyRent] = useState("");
+  const [validationError, setValidationError] = useState("");
+
+const isValidEmail = (v) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
+
+const cleanDigits = (v) => String(v).replace(/[^\d]/g, "");   // keep digits only
+const isValidPhone = (v) => {
+  const d = cleanDigits(v);
+  return d.length >= 10 && d.length <= 15; // UK/intl tolerances
+};
 
   // Property drivers
-  const [hmo, setHmo] = useState("No");
-  const [mufb, setMufb] = useState("No");
+  const [hmo, setHmo] = useState("No (Tier 1)");
+  const [mufb, setMufb] = useState("No (Tier 1)");
   const [holiday, setHoliday] = useState("No");
-  const [devExit, setDevExit] = useState("No");
+  const [flatAboveComm, setFlatAboveComm] = useState("No");
+  const [ownerocc, setOwnerocc] = useState("No");
+  const [devexit, setDevexit] = useState("No");
 
   // Applicant drivers
-  const [expat, setExpat] = useState("No");
+  const [expat, setExpat] = useState("No (Tier 1)");
   const [ftl, setFtl] = useState("No");
-  const [ftb, setFtb] = useState("No"); // First time buyer
+  const [offshore, setOffshore] = useState("No");
 
   // Adverse
   const [adverse, setAdverse] = useState("No");
-  const [mortArrears, setMortArrears] = useState("No");
-  const [unsArrears, setUnsArrears] = useState("No");
-  const [ccjDefault, setCcjDefault] = useState("No");
+  const [mortArrears, setMortArrears] = useState("0 in 24");
+  const [unsArrears, setUnsArrears] = useState("0 in 24");
+  const [ccjDefault, setCcjDefault] = useState("0 in 24");
   const [bankruptcy, setBankruptcy] = useState("Never");
 
   // Tier
   const tier = useMemo(() => {
-    // Check for exclusions first
-    if (holiday === "Yes" || ftb === "Yes" || bankruptcy !== "Never" || expat === "Foreign National") {
-      return "Excluded";
-    }
-
     const mapHmo = {
-      "No": 1,
-      "Up to 6 beds": 2,
+      "No (Tier 1)": 1,
+      "Up to 12 beds (Tier 1)": 1,
+      "More than 12 beds (Tier 2)": 2,
     };
     const mapMufb = {
-      "No": 1,
-      "Up to 6 units": 2,
+      "No (Tier 1)": 1,
+      "Up to 12 units (Tier 1)": 1,
+      "More than 12 units (Tier 2)": 2,
     };
     const mapExp = {
-      "No": 1,
-      "UK footprint": 2,
-    };
-    const mapFtl = {
-      "No": 1,
-      "Yes": 2,
-    };
-    const mapDevExit = {
-      "No": 1,
-      "Yes": 2,
+      "No (Tier 1)": 1,
+      "Yes (Tier 2)": 2,
     };
 
-    let t = Math.max(
-      mapHmo[hmo] || 1,
-      mapMufb[mufb] || 1,
-      mapExp[expat] || 1,
-      mapFtl[ftl] || 1,
-      mapDevExit[devExit] || 1
-    );
+    let t = 1;
+    t = Math.max(t, mapHmo[hmo] || 1);
+    t = Math.max(t, mapMufb[mufb] || 1);
+    t = Math.max(t, mapExp[expat] || 1);
+
+    if (ownerocc === "Yes") t = Math.max(t, 2);
+    if (devexit === "Yes") t = Math.max(t, 2);
+    if (flatAboveComm === "Yes") t = Math.max(t, 2);
+    if (ftl === "Yes") t = Math.max(t, 2);
+    if (offshore === "Yes") t = Math.max(t, 2);
 
     if (adverse === "Yes") {
-      const advMapMA = { "No": 1, "0 in 24": 1, "0 in 18": 2 };
-      const advMapUA = { "No": 1, "0 in 24": 1, "0 in 12": 2 };
-      const advMapCD = { "No": 1, "0 in 24": 1, "0 in 18": 2 };
+      const advMapMA = {
+        "No": 1, "2 in 18, 0 in 6": 1, "Other, more recent": 2,
+      };
+      const advMapUA = {
+        "No": 1, "2 in last 18": 1, "Other, more recent": 2,
+      };
+      const advMapCD = {
+        "No": 1, "2 in 18, 0 in 6": 1, "Other, more recent": 2,
+      };
+      const advMapBank = {
+        Never: 1, "Discharged >3yrs": 1, "Other, more recent": 2,
+      };
       const adverseTier = Math.max(
         advMapMA[mortArrears] || 1,
         advMapUA[unsArrears] || 1,
-        advMapCD[ccjDefault] || 1
+        advMapCD[ccjDefault] || 1,
+        advMapBank[bankruptcy] || 1
       );
       t = Math.max(t, adverseTier);
     }
 
     return t === 1 ? "Tier 1" : "Tier 2";
   }, [
-    hmo,
-    mufb,
-    expat,
-    holiday,
-    ftl,
-    devExit,
-    ftb,
-    adverse,
-    mortArrears,
-    unsArrears,
-    ccjDefault,
-    bankruptcy
+    hmo, mufb, expat, ownerocc, devexit, flatAboveComm, ftl, offshore,
+    adverse, mortArrears, unsArrears, ccjDefault, bankruptcy,
   ]);
 
-  const selected = tier !== "Excluded" ? window.RATES_Prime[tier]?.products?.[productType] : null;
+  const selected =
+    window.RATES_Commercial?.[tier]?.products?.[productType] || {};
+
   const isTracker = !!selected?.isMargin;
 
   // External constants
-  const MIN_ICR_FIX = window.MIN_ICR_Prime?.Fix ?? 1.25;
-  const MIN_ICR_TRK = window.MIN_ICR_Prime?.Tracker ?? 1.30;
-  const MIN_LOAN = window.MIN_LOAN_Prime ?? 150000;
-  const MAX_LOAN = window.MAX_LOAN_Prime ?? 3000000;
-  const STANDARD_BBR = window.STANDARD_BBR_Prime ?? 0.04;
-  const STRESS_BBR = window.STRESS_BBR_Prime ?? 0.0425;
-  const TERM_MONTHS = window.TERM_MONTHS_Prime ?? {
-    "2yr Fix": 24,
-    "3yr Fix": 36,
-    "2yr Tracker": 24,
-    Tracker: 24, // backward-compat
+  const MIN_ICR_FIX = window.MIN_ICR_Commercial?.Fix ?? 1.25;
+  const MIN_ICR_TRK = window.MIN_ICR_Commercial?.Tracker ?? 1.3;
+  const MIN_LOAN = window.MIN_LOAN_Commercial ?? 150000;
+  const MAX_LOAN = window.MAX_LOAN_Commercial ?? 2000000;
+  const STANDARD_BBR = window.STANDARD_BBR_Commercial ?? 0.04;
+  const STRESS_BBR = window.STRESS_BBR_Commercial ?? 0.0425;
+  const TERM_MONTHS = window.TERM_MONTHS_Commercial ?? {
+    "2yr Fix": 24, "3yr Fix": 36, "2yr Tracker": 24, Tracker: 24,
   };
-  const TOTAL_TERM = window.TOTAL_TERM_Prime ?? 10; // years
-  const LEAD_TO = window.LEAD_TO_Prime ?? "leads@example.com";
-  const CURRENT_MVR = window.CURRENT_MVR_Prime;
+  const TOTAL_TERM = window.TOTAL_TERM_Commercial ?? 10;
+  const CURRENT_MVR = window.CURRENT_MVR_Commercial ?? 0.0859;
 
   /* ------------------------------ Calculations ----------------------------- */
   const canShowMatrix = useMemo(() => {
-    if (tier === "Excluded") return false;
     const mr = toNumber(monthlyRent);
     const pv = toNumber(propertyValue);
     const sn = toNumber(specificNetLoan);
     if (!mr) return false;
     if (useSpecificNet === "Yes") return !!sn;
     return !!pv;
-  }, [monthlyRent, propertyValue, specificNetLoan, useSpecificNet, tier]);
+  }, [monthlyRent, propertyValue, specificNetLoan, useSpecificNet]);
 
-  // Main per-column calculation (no rolled/deferred)
   function computeForCol(colKey) {
     const feePct = Number(colKey) / 100;
     const base = selected?.[colKey];
     if (base == null) return null;
 
     const displayRate = isTracker ? base + STANDARD_BBR : base;
-    const fullRateText = isTracker
-      ? `${(base * 100).toFixed(2)}% + BBR`
-      : `${(displayRate * 100).toFixed(2)}%`;
-
-    const payRateAdj = displayRate;
-    const payRateText = fullRateText;
-
+    const fullRateText = isTracker ? `${(base * 100).toFixed(2)}% + BBR` : `${(base * 100).toFixed(2)}%`;
+    const deferredCap = isTracker ? MAX_DEFERRED_TRACKER : MAX_DEFERRED_FIX;
+    const payRateAdj = Math.max(displayRate - deferredCap, 0);
+    const payRateText = isTracker ? `${((base - deferredCap) * 100).toFixed(2)}% + BBR` : `${(payRateAdj * 100).toFixed(2)}%`;
     const pv = toNumber(propertyValue);
     const mr = toNumber(monthlyRent);
-
     const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
-    const maxLTV = getMaxLTV(tier);
+    const maxLTV = getMaxLTV(tier, flatAboveComm);
     const grossLTV = pv ? pv * maxLTV : Infinity;
-
-    const stressRate = Math.max(isTracker ? base + STRESS_BBR : displayRate, MIN_STRESS_RATE);
-    const termMonths = TERM_MONTHS_Prime[productType] ?? 24;
-    const monthsLeft = termMonths;
-    const stressAdj = stressRate;
+    const stressRate = isTracker ? base + STRESS_BBR : displayRate;
+    const termMonths = TERM_MONTHS[productType] ?? 24;
+    const rolledMonths = Math.min(MAX_ROLLED_MONTHS, termMonths);
+    const monthsLeft = Math.max(termMonths - rolledMonths, 1);
+    const stressAdj = Math.max(stressRate - deferredCap, 1e-6);
 
     let grossRent = Infinity;
     if (mr && stressAdj) {
-     const annualRent = mr * termMonths;
+      const annualRent = mr * termMonths;
       grossRent = annualRent / (minICR * (stressAdj / 12) * monthsLeft);
     }
-  
-   
+
     const N_input = toNumber(specificNetLoan);
     let grossFromNet = null;
     if (N_input && useSpecificNet === "Yes") {
+      const rolledFactor = stressAdj * (rolledMonths / 12);
       const numerator = N_input;
-      const denominator = 1 - feePct;
+      const denominator = (1 - (deferredCap / 12 * (termMonths)) - feePct - (payRateAdj) / 12 * rolledMonths);
       grossFromNet = numerator / denominator;
     }
 
@@ -239,61 +233,78 @@ const [validationError, setValidationError] = useState("");
     }
     const belowMin = eligibleGross < MIN_LOAN - 1e-6;
     const hitMaxCap = Math.abs(eligibleGross - MAX_LOAN) < 1e-6;
-
     const feeAmt = eligibleGross * feePct;
-    const net = eligibleGross - feeAmt;
+    const rolled = ((eligibleGross * (displayRate - deferredCap)) / 12) * rolledMonths;
+    const deferred = ((eligibleGross * deferredCap) / 12) * termMonths;
+    const net = eligibleGross - feeAmt - rolled - deferred;
     const ltv = pv ? eligibleGross / pv : null;
     const ddAmount = eligibleGross * (payRateAdj / 12);
 
     return {
       productName: `${productType}, ${tier}`,
-      fullRateText,
-      payRateText,
-      net,
-      gross: eligibleGross,
-      feeAmt,
-      ltv,
-      directDebit: ddAmount,
-      maxLTVRule: maxLTV,
-      belowMin,
-      hitMaxCap,
+      fullRateText, payRateText, deferredCapPct: deferredCap, net, gross: eligibleGross,
+      feeAmt, rolled, deferred, ltv, rolledMonths, directDebit: ddAmount,
+      maxLtvRule: maxLTV, termMonths, belowMin, hitMaxCap,
     };
   }
 
-  // "Basic Gross" is now the same as the main gross, as there's no deferred/roll
   function computeBasicGrossForCol(colKey) {
-    return computeForCol(colKey);
+  const base = selected?.[colKey];
+  if (base == null) return null;
+
+  const pv = toNumber(propertyValue);
+  const mr = toNumber(monthlyRent);
+  const sn = toNumber(specificNetLoan);
+  const feePct = Number(colKey) / 100;
+  const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
+  const maxLTV = getMaxLTV(tier, flatAboveComm);
+  const grossLTV = pv ? pv * maxLTV : Infinity;
+  const displayRate = isTracker ? base + STANDARD_BBR : base;
+  const stressRate = isTracker ? base + STRESS_BBR : displayRate;
+  const deferredCap = 0;
+  const stressAdj = Math.max(stressRate - deferredCap, 1e-6);
+
+  let grossRent = Infinity;
+  if (mr && stressAdj) {
+    const annualRent = mr * 12;
+    grossRent = annualRent / (minICR * stressAdj);
   }
 
-  // Best summary across the four columns (by gross)
+  let grossFromNet = Infinity;
+  if (useSpecificNet === "Yes" && sn != null && feePct < 1) {
+    grossFromNet = sn / (1 - feePct);
+  }
+
+  const eligibleGross = Math.min(grossLTV, grossRent, grossFromNet, MAX_LOAN);
+  const ltvPct = pv ? Math.round((eligibleGross / pv) * 100) : null;
+
+  return { grossBasic: eligibleGross, ltvPctBasic: ltvPct };
+}
+
   const bestSummary = useMemo(() => {
     if (!canShowMatrix) return null;
     const pv = toNumber(propertyValue) || 0;
-
-    const items = SHOW_FEE_COLS
-      .map((k) => [k, computeForCol(k)])
-      .filter(([, d]) => !!d);
-
+    const items = SHOW_FEE_COLS.map((k) => [k, computeForCol(k)]).filter(([, d]) => !!d);
     if (!items.length) return null;
 
     let best = null;
     for (const [colKey, d] of items) {
       if (!best || d.gross > best.gross) {
         best = {
-          colKey,
-          gross: d.gross,
-          grossStr: fmtMoney0(d.gross),
+          colKey, gross: d.gross, grossStr: fmtMoney0(d.gross),
           grossLtvPct: pv ? Math.round((d.gross / pv) * 100) : 0,
-          net: d.net,
-          netStr: fmtMoney0(d.net),
+          net: d.net, netStr: fmtMoney0(d.net),
           netLtvPct: pv ? Math.round((d.net / pv) * 100) : 0,
         };
       }
     }
     return best;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productType, tier, propertyValue, monthlyRent, useSpecificNet, specificNetLoan, canShowMatrix]);
+  }, [
+    productType, tier, propertyValue, monthlyRent, useSpecificNet,
+    specificNetLoan, flatAboveComm, canShowMatrix,
+  ]);
 
+  /* --------------------------- Send Quote via Zapier ---------------------------- */
   /* --------------------------- Send Quote via Email --------------------------- */
   const handleSendQuote = async () => {
   // Reset previous errors first
@@ -317,29 +328,28 @@ const [validationError, setValidationError] = useState("");
   if (!emailRegex.test(clientEmail)) {
     setValidationError("Please enter a valid email address.");
     return; // Stop the function here if email is invalid
-  }
-
-    setSending(true);
-    setSendStatus(null);
+  }    setSending(true);
+    setSendStatus(null); // Reset status on new attempt
 
     try {
-      // --- IMPORTANT: Replace with your actual Zapier Webhook URL ---
-      const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/utp5b85/";
+      const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/uhbzcvu/";
 
       const columnCalculations = SHOW_FEE_COLS
         .map((k) => ({ feePercent: k, ...computeForCol(k) }))
         .filter((d) => !!d.gross);
+      
+      const basicGrossCalculations = SHOW_FEE_COLS
+        .map((k) => computeBasicGrossForCol(k))
+        .filter(Boolean);
 
-      const payload = {
-        requestId: `MFS-PRIME-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      const basePayload = {
+        requestId: `MFS-COMM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         clientName, clientPhone, clientEmail,
         propertyValue, monthlyRent, productType, useSpecificNet, specificNetLoan,
-        hmo, mufb, holiday, devExit,
-        expat, ftl, ftb,
+        hmo, mufb, holiday, flatAboveComm, ownerocc, devexit,
+        expat, ftl, offshore,
         adverse, mortArrears, unsArrears, ccjDefault, bankruptcy,
         tier,
-        bestSummary,
-        allColumnData: columnCalculations,
         submissionTimestamp: new Date().toISOString(),
         revertRate: formatRevertRate(tier),
         totalTerm: `${TOTAL_TERM} years`,
@@ -348,46 +358,44 @@ const [validationError, setValidationError] = useState("");
         standardBbr: STANDARD_BBR,
       };
 
-      let success = false;
-    
+      const flatPayload = { ...basePayload };
       
-      // --- 1) TRY JSON POST (Primary Method) ---
-      try {
-        const res = await fetch(zapierWebhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) success = true;
-      } catch (e) {
-        console.warn("JSON POST failed (expected in browser due to CORS):", e);
+      for (const key in bestSummary) {
+        flatPayload[`bestSummary${key.charAt(0).toUpperCase() + key.slice(1)}`] = bestSummary[key];
       }
 
-      // --- 2) FALLBACK: Form-encoded POST ---
-      if (!success) {
-        try {
-          const form = new URLSearchParams();
-          for (const [k, v] of Object.entries(payload)) {
-            form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v ?? ""));
-          }
-          const res2 = await fetch(zapierWebhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-            body: form.toString(),
-          });
-          if (res2.ok) success = true;
-        } catch (e2) {
-          console.warn("Form-encoded POST failed:", e2);
+      columnCalculations.forEach((col, index) => {
+        for (const key in col) {
+          flatPayload[`allColumnData${key.charAt(0).toUpperCase() + key.slice(1)}_${index}`] = col[key];
         }
+      });
+      
+      basicGrossCalculations.forEach((col, index) => {
+        for (const key in col) {
+          flatPayload[`basicGrossColumnData${key.charAt(0).toUpperCase() + key.slice(1)}_${index}`] = col[key];
+        }
+      });
+      
+      const form = new URLSearchParams();
+      for (const [k, v] of Object.entries(flatPayload)) {
+        form.append(k, v);
       }
 
-      if (success) {
+      const res = await fetch(zapierWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: form.toString(),
+      });
+
+      if (res.ok) {
         setSendStatus("success");
       } else {
+        const errorText = await res.text();
+        console.error("Failed to send quote:", errorText);
         setSendStatus("error");
       }
-    } catch (error) {
-      console.error("An unexpected error occurred in handleSendQuote:", error);
+    } catch (e) {
+      console.error("Error sending quote:", e);
       setSendStatus("error");
     } finally {
       setSending(false);
@@ -398,7 +406,7 @@ const [validationError, setValidationError] = useState("");
   const valueBoxStyle = {
     width: "100%",
     textAlign: "center",
-    fontWeight: 400,                 // values NOT bold
+    fontWeight: 400,
     background: "#e2e8f0",
     borderRadius: 8,
     padding: "8px 10px",
@@ -406,54 +414,13 @@ const [validationError, setValidationError] = useState("");
 
   return (
     <div className="container">
-      {/* --------------------- Property Details (full width) -------------------- */}
-      <div className="card" style={{ gridColumn: "1 / -1", position: "relative" }}>
+      <div className="card" style={{ gridColumn: "1 / -1" }}>
         
-        {/* New flexbox container for header elements */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          
-          
-
-          {/* Right side: Links and Exclusions */}
-          <div className="top-right-container">
-            
-            <div className="top-right-exclusions">
-              Exclusions
-              <div className="exclusion-list">
-  <ul>
-    <li>Holiday Let</li>
-    <li>First Time Buyer</li>
-    <li>Offshore Company</li>
-    <li>Foreign National</li>
-    <li>Bankruptcy</li>
-    <li>Flat above commercial</li>
-  </ul>
-</div>
-            </div>
-          </div>
-        </div>
-
-        {/* This is the section you want to move */}
-        <div className="note" style={{ marginBottom: 8, marginTop: '20px' }}>
+    
+        <div className="note" style={{ marginBottom: 8 }}>
           Tier is calculated automatically from the inputs below. Current:{" "}
           <b>{tier}</b>
         </div>
-
-        {tier === "Excluded" && (
-          <div style={{
-            gridColumn: "1 / -1",
-            margin: "8px 0 12px 0",
-            padding: "10px 12px",
-            borderRadius: 10,
-            background: "#ffebee",
-            border: "1px solid #f44336",
-            color: "#d32f2f",
-            fontWeight: 600,
-            textAlign: "center",
-          }}>
-            This product is not available for the selected criteria.
-          </div>
-        )}
 
         <div className="profile-grid">
           <SectionTitle>Property Type</SectionTitle>
@@ -461,51 +428,47 @@ const [validationError, setValidationError] = useState("");
           <div className="field">
             <label>HMO</label>
             <select value={hmo} onChange={(e) => setHmo(e.target.value)}>
-              <option>No</option>
-              <option>Up to 6 beds</option>
+              <option>No (Tier 1)</option>
+              <option>Up to 12 beds (Tier 1)</option>
+              <option>More than 12 beds (Tier 2)</option>
             </select>
           </div>
 
           <div className="field">
             <label>MUFB</label>
             <select value={mufb} onChange={(e) => setMufb(e.target.value)}>
-              <option>No</option>
-              <option>Up to 6 units</option>
+              <option>No (Tier 1)</option>
+              <option>Up to 12 units (Tier 1)</option>
+              <option>More than 12 units (Tier 2)</option>
             </select>
           </div>
-          
           <div className="field">
-            <label>Holiday Let?</label>
-            <select value={holiday} onChange={(e) => setHoliday(e.target.value)}>
+            <label>Owner Occupier?</label>
+            <select
+              value={ownerocc}
+              onChange={(e) => setOwnerocc(e.target.value)}
+            >
               <option>No</option>
               <option>Yes</option>
             </select>
           </div>
-
           <div className="field">
-            <label>Dev Exit?</label>
-            <select value={devExit} onChange={(e) => setDevExit(e.target.value)}>
+            <label>Developer Exit?</label>
+            <select
+              value={devexit}
+              onChange={(e) => setDevexit(e.target.value)}
+            >
               <option>No</option>
               <option>Yes</option>
             </select>
           </div>
-
           <SectionTitle>Applicant Details</SectionTitle>
 
           <div className="field">
             <label>Expat / Foreign National</label>
             <select value={expat} onChange={(e) => setExpat(e.target.value)}>
-              <option>No</option>
-              <option>UK footprint</option>
-              <option>Foreign National</option>
-            </select>
-          </div>
-
-          <div className="field">
-            <label>First Time Buyer?</label>
-            <select value={ftb} onChange={(e) => setFtb(e.target.value)}>
-              <option>No</option>
-              <option>Yes</option>
+              <option>No (Tier 1)</option>
+              <option>Yes (Tier 2)</option>
             </select>
           </div>
 
@@ -516,10 +479,24 @@ const [validationError, setValidationError] = useState("");
               <option>Yes</option>
             </select>
           </div>
-          
+
+          <div className="field">
+            <label>Offshore company?</label>
+            <select
+              value={offshore}
+              onChange={(e) => setOffshore(e.target.value)}
+            >
+              <option>No</option>
+              <option>Yes</option>
+            </select>
+          </div>
+
           <div className="field">
             <label>Adverse Credit?</label>
-            <select value={adverse} onChange={(e) => setAdverse(e.target.value)}>
+            <select
+              value={adverse}
+              onChange={(e) => setAdverse(e.target.value)}
+            >
               <option>No</option>
               <option>Yes</option>
             </select>
@@ -529,44 +506,60 @@ const [validationError, setValidationError] = useState("");
             <>
               <div className="field">
                 <label>Mortgage Arrears</label>
-                <select value={mortArrears} onChange={(e) => setMortArrears(e.target.value)}>
+                <select
+                  value={mortArrears}
+                  onChange={(e) => setMortArrears(e.target.value)}
+                >
                   <option>No</option>
-                  <option>0 in 24</option>
-                  <option>0 in 18</option>
+                  <option>2 in 18, 0 in 6</option>
+                  <option>Other, more recent</option>
                 </select>
               </div>
 
               <div className="field">
                 <label>Unsecured Arrears</label>
-                <select value={unsArrears} onChange={(e) => setUnsArrears(e.target.value)}>
+                <select
+                  value={unsArrears}
+                  onChange={(e) => setUnsArrears(e.target.value)}
+                >
                   <option>No</option>
-                  <option>0 in 24</option>
-                  <option>0 in 12</option>
+                  <option>2 in last 18</option>
+                  <option>Other, more recent</option>
                 </select>
               </div>
 
               <div className="field">
                 <label>CCJ & Defaults</label>
-                <select value={ccjDefault} onChange={(e) => setCcjDefault(e.target.value)}>
+                <select
+                  value={ccjDefault}
+                  onChange={(e) => setCcjDefault(e.target.value)}
+                >
                   <option>No</option>
-                  <option>0 in 24</option>
-                  <option>0 in 18</option>
+                  <option>2 in 18, 0 in 6</option>
+                  <option>Other, more recent</option>
                 </select>
               </div>
-              
+
               <div className="field">
                 <label>Bankruptcy</label>
-                <select value={bankruptcy} onChange={(e) => setBankruptcy(e.target.value)}>
+                <select
+                  value={bankruptcy}
+                  onChange={(e) => setBankruptcy(e.target.value)}
+                >
                   <option>Never</option>
-                  <option>Anytime</option>
-                  </select>
+                  <option>Discharged &gt;3yrs</option>
+                  <option>Other, more recent</option>
+                </select>
               </div>
             </>
           )}
 
           <SectionTitle>Property & Product</SectionTitle>
 
-          <div className="profile-grid property-product" style={{ gridColumn: "1 / -1" }}>
+          <div
+            className="profile-grid property-product"
+            style={{ gridColumn: "1 / -1" }}
+          >
             <div className="field">
               <label>Property Value</label>
               <input
@@ -591,7 +584,10 @@ const [validationError, setValidationError] = useState("");
 
             <div className="field">
               <label>Use Specific Net Loan?</label>
-              <select value={useSpecificNet} onChange={(e) => setUseSpecificNet(e.target.value)}>
+              <select
+                value={useSpecificNet}
+                onChange={(e) => setUseSpecificNet(e.target.value)}
+              >
                 <option>No</option>
                 <option>Yes</option>
               </select>
@@ -612,8 +608,17 @@ const [validationError, setValidationError] = useState("");
 
             <div className="field">
               <label>Product Type</label>
-              <select value={productType} onChange={(e) => setProductType(e.target.value)}>
-                {window.PRODUCT_TYPES_Prime.filter(p => p !== "5yr Fix" && p !== "Non-Prime").map((p) => (
+              <select
+                value={productType}
+                onChange={(e) => setProductType(e.target.value)}
+              >
+                {(
+                  window.PRODUCT_TYPES_Commercial || [
+                    "2yr Fix",
+                    "3yr Fix",
+                    "2yr Tracker",
+                  ]
+                ).map((p) => (
                   <option key={p} value={p}>
                     {p}
                   </option>
@@ -626,7 +631,7 @@ const [validationError, setValidationError] = useState("");
 
       {/* ---------------------- Client Details & Lead (full) --------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1" }}>
-        <SectionTitle>Email this quote</SectionTitle>
+        <h4>Email this Quote</h4>
         <div className="profile-grid">
           <div className="field">
             <label>Client Name</label>
@@ -641,14 +646,12 @@ const [validationError, setValidationError] = useState("");
           <div className="field">
             <label>Contact Number</label>
             <input
-              type="tel"
-               inputMode="numeric"
-              placeholder="e.g. 07123 456789"
-              value={clientPhone}
-              onChange={(e) => {const numericValue = e.target.value.replace(/\D/g, '');
-      setClientPhone(numericValue);
-    }}
-            />
+  type="tel"
+  placeholder="e.g. 07123 456789"
+  value={clientPhone}
+  onChange={(e) => setClientPhone(cleanDigits(e.target.value))}
+  aria-invalid={validationError && !isValidPhone(clientPhone) ? "true" : "false"}
+/>
           </div>
 
           <div className="field">
@@ -662,9 +665,9 @@ const [validationError, setValidationError] = useState("");
           </div>
 
           <div className="field" style={{ alignSelf: "end" }}>
-            <button 
-              onClick={handleSendQuote} 
-              className="primaryBtn" 
+            <button
+              onClick={handleSendQuote}
+              className="primaryBtn"
               disabled={sending || !canShowMatrix}
             >
               {sending ? "Sending…" : "Send Email"}
@@ -672,7 +675,7 @@ const [validationError, setValidationError] = useState("");
             <div className="note"></div>
           </div>
         </div>
-         {/* ADD THIS BLOCK HERE TO DISPLAY THE ERROR */}
+        {/* ADD THIS BLOCK HERE TO DISPLAY THE ERROR */}
   {validationError && (
     <div style={{ marginTop: "16px", color: "#b91c1c", fontWeight: "50-0", textAlign: "center" }}>
       {validationError}
@@ -690,7 +693,6 @@ const [validationError, setValidationError] = useState("");
         )}
       </div>
 
-      {/* ===== Maximum Loan Summary (below Client Details) ===== */}
       {canShowMatrix && bestSummary && (
         <div
           className="card"
@@ -725,8 +727,8 @@ const [validationError, setValidationError] = useState("");
                 textAlign: "center",
               }}
             >
-              {bestSummary.grossStr} @ {bestSummary.grossLtvPct}% LTV, {productType},{" "}
-              {tier}, {Number(bestSummary.colKey)}% Fee
+              {bestSummary.grossStr} @ {bestSummary.grossLtvPct}% LTV,{" "}
+              {productType}, {tier}, {Number(bestSummary.colKey)}% Fee
             </div>
 
             <div
@@ -753,12 +755,14 @@ const [validationError, setValidationError] = useState("");
         </div>
       )}
 
-      {/* ----------------------- OUTPUT MATRIX (labels + 4 cols) ---------------- */}
       {canShowMatrix && (
         <div className="card" style={{ gridColumn: "1 / -1" }}>
           <div className="matrix">
             {(() => {
-              const colData = SHOW_FEE_COLS.map((k) => [k, computeForCol(k)]).filter(([, d]) => !!d);
+              const colData = SHOW_FEE_COLS.map((k) => [
+                k,
+                computeForCol(k),
+              ]).filter(([, d]) => !!d);
               const anyBelowMin = colData.some(([, d]) => d.belowMin);
               const anyAtMaxCap = colData.some(([, d]) => d.hitMaxCap);
 
@@ -779,13 +783,12 @@ const [validationError, setValidationError] = useState("");
                       }}
                     >
                       {anyBelowMin &&
-                        "ⓘOne or more gross loans are below the £150,000 minimum threshold. "}
+                        `⚠️ One or more gross loans are below the £${MIN_LOAN.toLocaleString()} minimum threshold. `}
                       {anyAtMaxCap &&
-                        "ⓘ One or more gross loans are capped at the £3,000,000 maximum."}
+                        `ⓘ One or more gross loans are capped at the £${MAX_LOAN.toLocaleString()} maximum.`}
                     </div>
                   )}
 
-                  {/* Labels */}
                   <div
                     className="matrixLabels"
                     style={{
@@ -793,8 +796,7 @@ const [validationError, setValidationError] = useState("");
                       gridTemplateRows: `
                         55px
                         48px 48px 48px 48px 48px
-                        48px 48px 48px 80px 48px 
-
+                        48px 48px 48px 48px 48px 85px 48px
                       `,
                     }}
                   >
@@ -803,29 +805,23 @@ const [validationError, setValidationError] = useState("");
                     <div className="mRow"><b>Full Rate</b></div>
                     <div className="mRow"><b>Pay Rate</b></div>
                     <div className="mRow">
-                      <b>
-                        Net Loan <span style={{ fontSize: "11px", fontWeight: 400 }}>(advanced day 1)</span>
-                      </b>
+                      <b>Net Loan <span style={{ fontSize: "11px", fontWeight: 400 }}>(advanced day 1)</span></b>
                     </div>
                     <div className="mRow">
-                      <b>
-                        Max Gross Loan <span style={{ fontSize: "11px", fontWeight: 400 }}>(paid at redemption)</span>
-                      </b>
+                      <b>Max Gross Loan <span style={{ fontSize: "11px", fontWeight: 400 }}>(paid at redemption)</span></b>
                     </div>
-
-
                     <div className="mRow"><b>Product Fee</b></div>
-                    
+                    <div className="mRow"><b>Rolled Months Interest</b></div>
+                    <div className="mRow"><b>Deferred Interest</b></div>
                     <div className="mRow"><b>Direct Debit</b></div>
                     <div className="mRow"><b>Revert Rate</b></div>
                     <div className="mRow"><b>Total Term | ERC</b></div>
                     <div className="mRow"><b>Max Product LTV</b></div>
                   </div>
 
-                  {/* Columns */}
                   {colData.map(([colKey, data], idx) => {
                     const headClass =
-                      idx === 0 ? "headGreen" : idx === 1 ? "headOrange" : idx === 2 ? "headTeal" : "headBlue";
+                      idx === 0 ? "headGreen" : idx === 1 ? "headOrange" : "headBlue";
 
                     return (
                       <div
@@ -836,17 +832,22 @@ const [validationError, setValidationError] = useState("");
                           gridTemplateRows: `
                             55px
                             48px 48px 48px 48px 48px
-                            48px 48px 48px 80px 48px 
+                            48px 48px 48px 48px 48px 85px 48px
                           `,
                         }}
                       >
-                        <div className={`matrixHead ${headClass}`}>BTL, {Number(colKey)}% Product Fee</div>
+                        <div className={`matrixHead ${headClass}`}>
+                          BTL, {Number(colKey)}% Product Fee
+                        </div>
 
                         <div className="mRow"><div className="mValue" style={valueBoxStyle}>{data.productName}</div></div>
                         <div className="mRow"><div className="mValue" style={valueBoxStyle}>{data.fullRateText}</div></div>
                         <div className="mRow">
                           <div className="mValue" style={valueBoxStyle}>
                             {data.payRateText}
+                            <span style={{fontWeight: 500, fontSize: 10, marginLeft: 6,}}>
+                              (using {(data.deferredCapPct * 100).toFixed(2)}% deferred)
+                            </span>
                           </div>
                         </div>
                         <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.net)}</div></div>
@@ -860,25 +861,13 @@ const [validationError, setValidationError] = useState("");
                             )}
                           </div>
                         </div>
-
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {fmtMoney0(data.feeAmt)} ({Number(colKey).toFixed(2)}%)
-                          </div>
-                        </div>
-                        
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {fmtMoney0(data.directDebit)} from month 1
-                          </div>
-                        </div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.feeAmt)} ({Number(colKey).toFixed(2)}%)</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.rolled)} ({data.rolledMonths}{" "}months)</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.deferred)} ({(data.deferredCapPct * 100).toFixed(2)}%)</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.directDebit)} from month{" "}{MAX_ROLLED_MONTHS + 1}</div></div>
                         <div className="mRow"><div className="mValue" style={valueBoxStyle}>{formatRevertRate(tier)}</div></div>
-                        <div className="mRow">
-                          <div className="mValue" style={valueBoxStyle}>
-                            {TOTAL_TERM} years | {formatERC(productType)}
-                          </div>
-                        </div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{(data.maxLTVRule * 100).toFixed(0)}%</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{TOTAL_TERM} years | {formatERC(productType)}</div></div>
+                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{(data.maxLtvRule * 100).toFixed(0)}%</div></div>
                       </div>
                     );
                   })}
@@ -889,10 +878,8 @@ const [validationError, setValidationError] = useState("");
         </div>
       )}
 
-      {/* ------------- EXTRA: Basic Gross (aligned under columns) + MVR/BBR ---- */}
       {canShowMatrix && (
         <div className="card" style={{ gridColumn: "1 / -1" }}>
-          {/* advisory line */}
           <div
             style={{
               textAlign: "center",
@@ -905,17 +892,77 @@ const [validationError, setValidationError] = useState("");
               marginBottom: 12,
             }}
           >
-            This product does not have rolled or deferred interest.
+            Results currently use maximum rolled months & deferred interest.
+            Speak with an underwriter for a customised loan illustration which
+            can utilise less rolled and deferred interest (which can increase
+            the net loan on day 1).
           </div>
 
-          {/* Use the SAME .matrix grid so columns line up perfectly */}
           <div className="matrix" style={{ rowGap: 0 }}>
-            
-            {/* Footer line under the aligned row */}
-            <div style={{ gridColumn: "1 / -1", textAlign: "center", marginTop: 12, fontSize: 12, color: "#334155" }}>
+            <div
+              className="matrixLabels"
+              style={{
+                display: "grid",
+                gridTemplateRows: `48px`,
+                border: "1px solid transparent",
+                background: "transparent",
+              }}
+            >
+              <div className="mRow" style={{ justifyContent: "center", color: "#475569" }}>
+                <b>Basic Gross (no roll/deferred)</b>
+              </div>
+            </div>
+
+            {SHOW_FEE_COLS.map((k, idx) => {
+              const d = computeBasicGrossForCol(k);
+              if (!d) return null;
+
+              return (
+                <div
+                  key={`basic-${k}`}
+                  className="matrixCol"
+                  style={{
+                    display: "grid",
+                    gridTemplateRows: `48px`,
+                    borderTopLeftRadius: 0,
+                    borderTopRightRadius: 0,
+                  }}
+                >
+                  <div className="mRow" style={{ padding: 6 }}>
+                    <div
+                      className="mValue"
+                      style={{
+                        width: "100%",
+                        textAlign: "center",
+                        fontWeight: 800,
+                        background: "#f1f5f9",
+                        borderRadius: 8,
+                        padding: "10px 12px",
+                      }}
+                    >
+                      {fmtMoney0(d.grossBasic)}{" "}
+                      <span style={{ fontWeight: 700 }}>
+                        @{" "}
+                        {d.ltvPctBasic != null ? `${d.ltvPctBasic}% LTV` : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                textAlign: "center",
+                marginTop: 12,
+                fontSize: 12,
+                color: "#334155",
+              }}
+            >
               <span style={{ marginRight: 16 }}>
-                <b>MVR (Market Financial Solutions Variable Rate)</b> is currently{" "}
-                {(CURRENT_MVR * 100).toFixed(2)}%
+                <b>MVR (Market Financial Solutions Variable Rate)</b> is
+                currently {(CURRENT_MVR * 100).toFixed(2)}%
               </span>
               <span>
                 <b>BBR</b> is currently {(STANDARD_BBR * 100).toFixed(2)}%
@@ -928,4 +975,4 @@ const [validationError, setValidationError] = useState("");
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("calc-root")).render(<App />);

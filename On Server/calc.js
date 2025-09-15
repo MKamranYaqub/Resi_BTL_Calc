@@ -9,7 +9,7 @@ function SectionTitle({ children }) {
           fontSize: 15,
           fontWeight: 700,
           color: "#334155",
-          textTransform: "normalize",
+          textTransform: "normal",
           letterSpacing: "0.04em",
           marginTop: 8,
           marginBottom: 4,
@@ -23,10 +23,9 @@ function SectionTitle({ children }) {
 }
 
 /* ----------------------------- GLOBAL CONSTANTS ---------------------------- */
-const MAX_ROLLED_MONTHS = 0; // Set to 0 as per new criteria
-const MAX_DEFERRED_FIX = 0; // Set to 0 as per new criteria
-const MAX_DEFERRED_TRACKER = 0; // Set to 0 as per new criteria
-const MIN_STRESS_RATE = window.MIN_STRESS_RATE; // New variable for min stress rate
+const MAX_ROLLED_MONTHS = 9;
+const MAX_DEFERRED_FIX = 0.0125;      // 1.25%
+const MAX_DEFERRED_TRACKER = 0.02;    // 2.00%
 const SHOW_FEE_COLS = ["6", "4", "3", "2"];
 
 /* ------------------------------ UTIL FUNCTIONS ----------------------------- */
@@ -46,25 +45,27 @@ const fmtPct = (p, dp = 2) =>
   p || p === 0 ? `${(Number(p) * 100).toFixed(dp)}%` : "—";
 
 /* Tier/LTV rule */
-function getMaxLTV(tier) {
+function getMaxLTV(tier, flatAboveComm) {
+  if (flatAboveComm === "Yes") {
+    if (tier === "Tier 2") return 0.60;
+    if (tier === "Tier 3") return 0.70;
+  }
   return 0.75;
 }
 function formatRevertRate(tier) {
-  const add = window.REVERT_RATE_Prime?.[tier]?.add ?? 0;
+  const add = window.REVERT_RATE?.[tier]?.add ?? 0;
   return add === 0 ? "MVR" : `MVR + ${(add * 100).toFixed(2)}%`;
 }
 function formatERC(productType) {
-  const ercArr = window.ERC_Prime?.[productType] ?? ["—"];
+  const ercArr = window.ERC?.[productType] ?? ["—"];
   return ercArr.join(" / ");
 }
 
 /* ----------------------------------- App ----------------------------------- */
 function App() {
-  
   const [productType, setProductType] = useState("2yr Fix");
   const [useSpecificNet, setUseSpecificNet] = useState("No");
   const [specificNetLoan, setSpecificNetLoan] = useState("");
-  
 
   // Client / Lead
   const [clientName, setClientName] = useState("");
@@ -72,164 +73,184 @@ function App() {
   const [clientEmail, setClientEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState(null); // Add this line
-  // DELETE THIS LINE from inside handleSendQuote
-const [validationError, setValidationError] = useState("");
 
   // Property & income
   const [propertyValue, setPropertyValue] = useState("");
   const [monthlyRent, setMonthlyRent] = useState("");
 
+  const [validationError, setValidationError] = useState("");
+
+const isValidEmail = (v) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
+
+const cleanDigits = (v) => String(v).replace(/[^\d]/g, "");   // keep digits only
+const isValidPhone = (v) => {
+  const d = cleanDigits(v);
+  return d.length >= 10 && d.length <= 15; // UK/intl tolerances
+};
+
   // Property drivers
-  const [hmo, setHmo] = useState("No");
-  const [mufb, setMufb] = useState("No");
+  const [hmo, setHmo] = useState("No (Tier 1)");
+  const [mufb, setMufb] = useState("No (Tier 1)");
   const [holiday, setHoliday] = useState("No");
-  const [devExit, setDevExit] = useState("No");
+  const [flatAboveComm, setFlatAboveComm] = useState("No");
 
   // Applicant drivers
-  const [expat, setExpat] = useState("No");
+  const [expat, setExpat] = useState("No (Tier 1)");
   const [ftl, setFtl] = useState("No");
-  const [ftb, setFtb] = useState("No"); // First time buyer
+  const [offshore, setOffshore] = useState("No");
 
   // Adverse
   const [adverse, setAdverse] = useState("No");
-  const [mortArrears, setMortArrears] = useState("No");
-  const [unsArrears, setUnsArrears] = useState("No");
-  const [ccjDefault, setCcjDefault] = useState("No");
+  const [mortArrears, setMortArrears] = useState("0 in 24");
+  const [unsArrears, setUnsArrears] = useState("0 in 24");
+  const [ccjDefault, setCcjDefault] = useState("0 in 24");
   const [bankruptcy, setBankruptcy] = useState("Never");
 
   // Tier
   const tier = useMemo(() => {
-    // Check for exclusions first
-    if (holiday === "Yes" || ftb === "Yes" || bankruptcy !== "Never" || expat === "Foreign National") {
-      return "Excluded";
-    }
-
     const mapHmo = {
-      "No": 1,
+      "No (Tier 1)": 1,
+      "Up to 6 beds (Tier 2)": 2,
+      "More than 6 beds (Tier 3)": 3,
+      No: 1,
       "Up to 6 beds": 2,
+      "More than 6 beds": 3,
     };
     const mapMufb = {
-      "No": 1,
+      "No (Tier 1)": 1,
+      "Up to 6 units (Tier 2)": 2,
+      "Less than 30 units (Tier 3)": 3,
+      No: 1,
       "Up to 6 units": 2,
+      "Less than 30 units": 3,
     };
     const mapExp = {
-      "No": 1,
+      "No (Tier 1)": 1,
+      "Yes - UK footprint (Tier 2)": 2,
+      "Yes - Without UK footprint (Tier 3)": 3,
+      No: 1,
       "UK footprint": 2,
+      Yes: 3,
     };
-    const mapFtl = {
-      "No": 1,
-      "Yes": 2,
-    };
-    const mapDevExit = {
-      "No": 1,
-      "Yes": 2,
-    };
+    const yn3 = (v) => (v === "Yes" ? 3 : 1);
 
-    let t = Math.max(
-      mapHmo[hmo] || 1,
-      mapMufb[mufb] || 1,
-      mapExp[expat] || 1,
-      mapFtl[ftl] || 1,
-      mapDevExit[devExit] || 1
-    );
+    let t = Math.max(mapHmo[hmo] || 1, mapMufb[mufb] || 1, mapExp[expat] || 1);
+
+    if (yn3(holiday) === 3) t = 3;
+    if (yn3(offshore) === 3) t = 3;
+
+    // Flat above commercial: at least Tier 2 (but allow Tier 3 if other rules push it)
+    if (flatAboveComm === "Yes") t = Math.max(t, 2);
+
+    if (ftl === "Yes") t = Math.max(t, 2);
 
     if (adverse === "Yes") {
-      const advMapMA = { "No": 1, "0 in 24": 1, "0 in 18": 2 };
-      const advMapUA = { "No": 1, "0 in 24": 1, "0 in 12": 2 };
-      const advMapCD = { "No": 1, "0 in 24": 1, "0 in 18": 2 };
+      const advMapMA = { "0 in 24": 1, "0 in 18": 2, "All considered by referral": 3 };
+      const advMapUA = { "0 in 24": 1, "0 in 12": 2, "All considered by referral": 3 };
+      const advMapCD = { "0 in 24": 1, "0 in 18": 2, "All considered by referral": 3 };
+      const advMapBank = {
+        Never: 1,
+        "All considered by referral": 3,
+      };
       const adverseTier = Math.max(
         advMapMA[mortArrears] || 1,
         advMapUA[unsArrears] || 1,
-        advMapCD[ccjDefault] || 1
+        advMapCD[ccjDefault] || 1,
+        advMapBank[bankruptcy] || 1
       );
       t = Math.max(t, adverseTier);
     }
 
-    return t === 1 ? "Tier 1" : "Tier 2";
+    return t === 1 ? "Tier 1" : t === 2 ? "Tier 2" : "Tier 3";
   }, [
     hmo,
     mufb,
     expat,
     holiday,
+    flatAboveComm,
     ftl,
-    devExit,
-    ftb,
+    offshore,
     adverse,
     mortArrears,
     unsArrears,
     ccjDefault,
-    bankruptcy
+    bankruptcy,
   ]);
 
-  const selected = tier !== "Excluded" ? window.RATES_Prime[tier]?.products?.[productType] : null;
+  const selected = window.RATES[tier].products[productType];
   const isTracker = !!selected?.isMargin;
 
   // External constants
-  const MIN_ICR_FIX = window.MIN_ICR_Prime?.Fix ?? 1.25;
-  const MIN_ICR_TRK = window.MIN_ICR_Prime?.Tracker ?? 1.30;
-  const MIN_LOAN = window.MIN_LOAN_Prime ?? 150000;
-  const MAX_LOAN = window.MAX_LOAN_Prime ?? 3000000;
-  const STANDARD_BBR = window.STANDARD_BBR_Prime ?? 0.04;
-  const STRESS_BBR = window.STRESS_BBR_Prime ?? 0.0425;
-  const TERM_MONTHS = window.TERM_MONTHS_Prime ?? {
+  const MIN_ICR_FIX = window.MIN_ICR?.Fix ?? 1.25;
+  const MIN_ICR_TRK = window.MIN_ICR?.Tracker ?? 1.30;
+  const MIN_LOAN = window.MIN_LOAN ?? 150000;
+  const MAX_LOAN = window.MAX_LOAN ?? 3000000;
+  const STANDARD_BBR = window.STANDARD_BBR ?? 0.04;
+  const STRESS_BBR = window.STRESS_BBR ?? 0.0425;
+  const TERM_MONTHS = window.TERM_MONTHS ?? {
     "2yr Fix": 24,
     "3yr Fix": 36,
     "2yr Tracker": 24,
     Tracker: 24, // backward-compat
   };
-  const TOTAL_TERM = window.TOTAL_TERM_Prime ?? 10; // years
-  const LEAD_TO = window.LEAD_TO_Prime ?? "leads@example.com";
-  const CURRENT_MVR = window.CURRENT_MVR_Prime;
+  const TOTAL_TERM = window.TOTAL_TERM ?? 10; // years
+  const LEAD_TO = window.LEAD_TO ?? "leads@example.com";
+  const CURRENT_MVR = window.CURRENT_MVR; // 8.59% default
 
   /* ------------------------------ Calculations ----------------------------- */
   const canShowMatrix = useMemo(() => {
-    if (tier === "Excluded") return false;
     const mr = toNumber(monthlyRent);
     const pv = toNumber(propertyValue);
     const sn = toNumber(specificNetLoan);
     if (!mr) return false;
     if (useSpecificNet === "Yes") return !!sn;
     return !!pv;
-  }, [monthlyRent, propertyValue, specificNetLoan, useSpecificNet, tier]);
+  }, [monthlyRent, propertyValue, specificNetLoan, useSpecificNet]);
 
-  // Main per-column calculation (no rolled/deferred)
+  // Main per-column calculation (with rolled/deferred caps)
   function computeForCol(colKey) {
     const feePct = Number(colKey) / 100;
     const base = selected?.[colKey];
     if (base == null) return null;
 
     const displayRate = isTracker ? base + STANDARD_BBR : base;
+
     const fullRateText = isTracker
       ? `${(base * 100).toFixed(2)}% + BBR`
-      : `${(displayRate * 100).toFixed(2)}%`;
+      : `${(base * 100).toFixed(2)}%`;
 
-    const payRateAdj = displayRate;
-    const payRateText = fullRateText;
+    const deferredCap = isTracker ? MAX_DEFERRED_TRACKER : MAX_DEFERRED_FIX;
+    const payRateAdj = Math.max(displayRate - deferredCap, 0);
+    const payRateText = isTracker
+      ? `${((base - deferredCap) * 100).toFixed(2)}% + BBR`
+      : `${(payRateAdj * 100).toFixed(2)}%`;
 
     const pv = toNumber(propertyValue);
     const mr = toNumber(monthlyRent);
 
     const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
-    const maxLTV = getMaxLTV(tier);
+    const maxLTV = getMaxLTV(tier, flatAboveComm);
     const grossLTV = pv ? pv * maxLTV : Infinity;
 
-    const stressRate = Math.max(isTracker ? base + STRESS_BBR : displayRate, MIN_STRESS_RATE);
-    const termMonths = TERM_MONTHS_Prime[productType] ?? 24;
-    const monthsLeft = termMonths;
-    const stressAdj = stressRate;
+    const stressRate = isTracker ? base + STRESS_BBR : displayRate;
+    const termMonths = TERM_MONTHS[productType] ?? 24;
+    const rolledMonths = Math.min(MAX_ROLLED_MONTHS, termMonths);
+    const monthsLeft = Math.max(termMonths - rolledMonths, 1);
+    const stressAdj = Math.max(stressRate - deferredCap, 1e-6);
 
     let grossRent = Infinity;
     if (mr && stressAdj) {
-     const annualRent = mr * termMonths;
+      const annualRent = mr * termMonths;
       grossRent = annualRent / (minICR * (stressAdj / 12) * monthsLeft);
     }
-  
-   
+
     const N_input = toNumber(specificNetLoan);
     let grossFromNet = null;
     if (N_input && useSpecificNet === "Yes") {
+      const rolledFactor = stressAdj * (rolledMonths / 12);
       const numerator = N_input;
-      const denominator = 1 - feePct;
+      const denominator = (1 - (deferredCap / 12 * (termMonths)) - feePct - (payRateAdj) / 12 * rolledMonths);
       grossFromNet = numerator / denominator;
     }
 
@@ -241,7 +262,9 @@ const [validationError, setValidationError] = useState("");
     const hitMaxCap = Math.abs(eligibleGross - MAX_LOAN) < 1e-6;
 
     const feeAmt = eligibleGross * feePct;
-    const net = eligibleGross - feeAmt;
+    const rolled = (eligibleGross * (displayRate - deferredCap) / 12) * rolledMonths;
+    const deferred = (eligibleGross * deferredCap / 12) * termMonths;
+    const net = eligibleGross - feeAmt - rolled - deferred;
     const ltv = pv ? eligibleGross / pv : null;
     const ddAmount = eligibleGross * (payRateAdj / 12);
 
@@ -249,20 +272,67 @@ const [validationError, setValidationError] = useState("");
       productName: `${productType}, ${tier}`,
       fullRateText,
       payRateText,
+      deferredCapPct: deferredCap,
       net,
       gross: eligibleGross,
       feeAmt,
+      rolled,
+      deferred,
       ltv,
+      rolledMonths,
       directDebit: ddAmount,
-      maxLTVRule: maxLTV,
+      maxLtvRule: maxLTV,
+      termMonths,
       belowMin,
       hitMaxCap,
     };
   }
 
-  // "Basic Gross" is now the same as the main gross, as there's no deferred/roll
+  // "Basic Gross" per column: **no rolled months, no deferred interest**
+  // "Basic Gross" per column: **no rolled months, no deferred interest**
   function computeBasicGrossForCol(colKey) {
-    return computeForCol(colKey);
+    const base = selected?.[colKey];
+    if (base == null) return null;
+
+    const pv = toNumber(propertyValue);
+    const mr = toNumber(monthlyRent);
+    const sn = toNumber(specificNetLoan); // Get specific net loan
+    const feePct = Number(colKey) / 100; // Get the fee percentage
+
+    const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
+    const maxLTV = getMaxLTV(tier, flatAboveComm);
+    const grossLTV = pv ? pv * maxLTV : Infinity;
+
+    const displayRate = isTracker ? base + STANDARD_BBR : base;
+    const stressRate = isTracker ? base + STRESS_BBR : displayRate;
+
+    // No deferred cap, no rolled months
+    const deferredCap = 0;
+    const termMonths = TERM_MONTHS[productType] ?? 24;
+    const monthsLeft = termMonths;
+    const stressAdj = Math.max(stressRate - deferredCap, 1e-6);
+
+    let grossRent = Infinity;
+    if (mr && stressAdj) {
+      const annualRent = mr * termMonths;
+      grossRent = annualRent / (minICR * (stressAdj / 12) * monthsLeft);
+    }
+    
+    // Calculate gross loan from specific net loan, if applicable
+    let grossFromNet = Infinity;
+    if (useSpecificNet === "Yes" && sn != null && feePct < 1) {
+      // Basic calculation: Net Loan / (1 - Fee %)
+      grossFromNet = sn / (1 - feePct);
+    }
+
+    // The final eligible gross is the minimum of all calculation methods
+    const eligibleGross = Math.min(grossLTV, grossRent, grossFromNet, MAX_LOAN);
+    const ltvPct = pv ? Math.round((eligibleGross / pv) * 100) : null;
+
+    return {
+      grossBasic: eligibleGross,
+      ltvPctBasic: ltvPct,
+    };
   }
 
   // Best summary across the four columns (by gross)
@@ -292,7 +362,7 @@ const [validationError, setValidationError] = useState("");
     }
     return best;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productType, tier, propertyValue, monthlyRent, useSpecificNet, specificNetLoan, canShowMatrix]);
+  }, [productType, tier, propertyValue, monthlyRent, useSpecificNet, specificNetLoan, flatAboveComm, canShowMatrix]);
 
   /* --------------------------- Send Quote via Email --------------------------- */
   const handleSendQuote = async () => {
@@ -324,34 +394,40 @@ const [validationError, setValidationError] = useState("");
 
     try {
       // --- IMPORTANT: Replace with your actual Zapier Webhook URL ---
-      const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/utp5b85/";
+      const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/uhocm7m/";
 
       const columnCalculations = SHOW_FEE_COLS
         .map((k) => ({ feePercent: k, ...computeForCol(k) }))
         .filter((d) => !!d.gross);
+      const basicGrossCalculations = SHOW_FEE_COLS
+        .map((k) => {
+          const d = computeBasicGrossForCol(k);
+          return d ? { feePercent: k, ...d } : null;
+        })
+        .filter(Boolean);
 
       const payload = {
-        requestId: `MFS-PRIME-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        requestId: `MFS-RESI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         clientName, clientPhone, clientEmail,
         propertyValue, monthlyRent, productType, useSpecificNet, specificNetLoan,
-        hmo, mufb, holiday, devExit,
-        expat, ftl, ftb,
+        hmo, mufb, holiday, flatAboveComm,
+        expat, ftl, offshore,
         adverse, mortArrears, unsArrears, ccjDefault, bankruptcy,
         tier,
         bestSummary,
         allColumnData: columnCalculations,
+        basicGrossColumnData: basicGrossCalculations,
         submissionTimestamp: new Date().toISOString(),
         revertRate: formatRevertRate(tier),
         totalTerm: `${TOTAL_TERM} years`,
         erc: formatERC(productType),
-        currentMvr: CURRENT_MVR,
-        standardBbr: STANDARD_BBR,
+        currentMVR: CURRENT_MVR,
+        standardBBR: STANDARD_BBR,
       };
 
       let success = false;
-    
-      
-      // --- 1) TRY JSON POST (Primary Method) ---
+
+      // --- 1) TRY JSON POST ---
       try {
         const res = await fetch(zapierWebhookUrl, {
           method: "POST",
@@ -409,51 +485,11 @@ const [validationError, setValidationError] = useState("");
       {/* --------------------- Property Details (full width) -------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1", position: "relative" }}>
         
-        {/* New flexbox container for header elements */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          
-          
-
-          {/* Right side: Links and Exclusions */}
-          <div className="top-right-container">
-            
-            <div className="top-right-exclusions">
-              Exclusions
-              <div className="exclusion-list">
-  <ul>
-    <li>Holiday Let</li>
-    <li>First Time Buyer</li>
-    <li>Offshore Company</li>
-    <li>Foreign National</li>
-    <li>Bankruptcy</li>
-    <li>Flat above commercial</li>
-  </ul>
-</div>
-            </div>
-          </div>
-        </div>
-
-        {/* This is the section you want to move */}
-        <div className="note" style={{ marginBottom: 8, marginTop: '20px' }}>
+       
+        <div className="note" style={{ marginBottom: 8 }}>
           Tier is calculated automatically from the inputs below. Current:{" "}
           <b>{tier}</b>
         </div>
-
-        {tier === "Excluded" && (
-          <div style={{
-            gridColumn: "1 / -1",
-            margin: "8px 0 12px 0",
-            padding: "10px 12px",
-            borderRadius: 10,
-            background: "#ffebee",
-            border: "1px solid #f44336",
-            color: "#d32f2f",
-            fontWeight: 600,
-            textAlign: "center",
-          }}>
-            This product is not available for the selected criteria.
-          </div>
-        )}
 
         <div className="profile-grid">
           <SectionTitle>Property Type</SectionTitle>
@@ -461,19 +497,21 @@ const [validationError, setValidationError] = useState("");
           <div className="field">
             <label>HMO</label>
             <select value={hmo} onChange={(e) => setHmo(e.target.value)}>
-              <option>No</option>
-              <option>Up to 6 beds</option>
+              <option>No (Tier 1)</option>
+              <option>Up to 6 beds (Tier 2)</option>
+              <option>More than 6 beds (Tier 3)</option>
             </select>
           </div>
 
           <div className="field">
             <label>MUFB</label>
             <select value={mufb} onChange={(e) => setMufb(e.target.value)}>
-              <option>No</option>
-              <option>Up to 6 units</option>
+              <option>No (Tier 1)</option>
+              <option>Up to 6 units (Tier 2)</option>
+              <option>Less than 30 units (Tier 3)</option>
             </select>
           </div>
-          
+
           <div className="field">
             <label>Holiday Let?</label>
             <select value={holiday} onChange={(e) => setHoliday(e.target.value)}>
@@ -483,11 +521,22 @@ const [validationError, setValidationError] = useState("");
           </div>
 
           <div className="field">
-            <label>Dev Exit?</label>
-            <select value={devExit} onChange={(e) => setDevExit(e.target.value)}>
+            <label htmlFor="flat-above-commercial">Flat above commercial?</label>
+            <select id="flat-above-commercial" value={flatAboveComm} onChange={(e) => setFlatAboveComm(e.target.value)}>
               <option>No</option>
               <option>Yes</option>
             </select>
+            <div style={{
+              marginTop: 8,
+              background: '#f1f5f9',
+              color: '#475569',
+              fontSize: 12,
+              padding: '8px 10px',
+              borderRadius: 8,
+              textAlign: 'center'
+            }}>
+              Tier 2 LTV: 60% | Tier 3 LTV: 70%
+                          </div>
           </div>
 
           <SectionTitle>Applicant Details</SectionTitle>
@@ -495,17 +544,9 @@ const [validationError, setValidationError] = useState("");
           <div className="field">
             <label>Expat / Foreign National</label>
             <select value={expat} onChange={(e) => setExpat(e.target.value)}>
-              <option>No</option>
-              <option>UK footprint</option>
-              <option>Foreign National</option>
-            </select>
-          </div>
-
-          <div className="field">
-            <label>First Time Buyer?</label>
-            <select value={ftb} onChange={(e) => setFtb(e.target.value)}>
-              <option>No</option>
-              <option>Yes</option>
+              <option>No (Tier 1)</option>
+              <option>Yes - UK footprint (Tier 2)</option>
+              <option>Yes - Without UK footprint (Tier 3)</option>
             </select>
           </div>
 
@@ -516,7 +557,15 @@ const [validationError, setValidationError] = useState("");
               <option>Yes</option>
             </select>
           </div>
-          
+
+          <div className="field">
+            <label>Offshore company?</label>
+            <select value={offshore} onChange={(e) => setOffshore(e.target.value)}>
+              <option>No</option>
+              <option>Yes</option>
+            </select>
+          </div>
+
           <div className="field">
             <label>Adverse Credit?</label>
             <select value={adverse} onChange={(e) => setAdverse(e.target.value)}>
@@ -530,36 +579,36 @@ const [validationError, setValidationError] = useState("");
               <div className="field">
                 <label>Mortgage Arrears</label>
                 <select value={mortArrears} onChange={(e) => setMortArrears(e.target.value)}>
-                  <option>No</option>
                   <option>0 in 24</option>
                   <option>0 in 18</option>
+                  <option>All considered by referral</option>
                 </select>
               </div>
 
               <div className="field">
                 <label>Unsecured Arrears</label>
                 <select value={unsArrears} onChange={(e) => setUnsArrears(e.target.value)}>
-                  <option>No</option>
                   <option>0 in 24</option>
                   <option>0 in 12</option>
+                  <option>All considered by referral</option>
                 </select>
               </div>
 
               <div className="field">
                 <label>CCJ & Defaults</label>
                 <select value={ccjDefault} onChange={(e) => setCcjDefault(e.target.value)}>
-                  <option>No</option>
                   <option>0 in 24</option>
                   <option>0 in 18</option>
+                  <option>All considered by referral</option>
                 </select>
               </div>
-              
+
               <div className="field">
                 <label>Bankruptcy</label>
                 <select value={bankruptcy} onChange={(e) => setBankruptcy(e.target.value)}>
                   <option>Never</option>
-                  <option>Anytime</option>
-                  </select>
+                  <option>All considered by referral</option>
+                </select>
               </div>
             </>
           )}
@@ -613,7 +662,7 @@ const [validationError, setValidationError] = useState("");
             <div className="field">
               <label>Product Type</label>
               <select value={productType} onChange={(e) => setProductType(e.target.value)}>
-                {window.PRODUCT_TYPES_Prime.filter(p => p !== "5yr Fix" && p !== "Non-Prime").map((p) => (
+                {window.PRODUCT_TYPES.map((p) => (
                   <option key={p} value={p}>
                     {p}
                   </option>
@@ -626,7 +675,7 @@ const [validationError, setValidationError] = useState("");
 
       {/* ---------------------- Client Details & Lead (full) --------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1" }}>
-        <SectionTitle>Email this quote</SectionTitle>
+        <h4>Email this Quote</h4>
         <div className="profile-grid">
           <div className="field">
             <label>Client Name</label>
@@ -641,14 +690,12 @@ const [validationError, setValidationError] = useState("");
           <div className="field">
             <label>Contact Number</label>
             <input
-              type="tel"
-               inputMode="numeric"
-              placeholder="e.g. 07123 456789"
-              value={clientPhone}
-              onChange={(e) => {const numericValue = e.target.value.replace(/\D/g, '');
-      setClientPhone(numericValue);
-    }}
-            />
+  type="tel"
+  placeholder="e.g. 07123 456789"
+  value={clientPhone}
+  onChange={(e) => setClientPhone(cleanDigits(e.target.value))}
+  aria-invalid={validationError && !isValidPhone(clientPhone) ? "true" : "false"}
+/>
           </div>
 
           <div className="field">
@@ -662,9 +709,9 @@ const [validationError, setValidationError] = useState("");
           </div>
 
           <div className="field" style={{ alignSelf: "end" }}>
-            <button 
-              onClick={handleSendQuote} 
-              className="primaryBtn" 
+            <button
+              onClick={handleSendQuote}
+              className="primaryBtn"
               disabled={sending || !canShowMatrix}
             >
               {sending ? "Sending…" : "Send Email"}
@@ -672,7 +719,7 @@ const [validationError, setValidationError] = useState("");
             <div className="note"></div>
           </div>
         </div>
-         {/* ADD THIS BLOCK HERE TO DISPLAY THE ERROR */}
+        {/* ADD THIS BLOCK HERE TO DISPLAY THE ERROR */}
   {validationError && (
     <div style={{ marginTop: "16px", color: "#b91c1c", fontWeight: "50-0", textAlign: "center" }}>
       {validationError}
@@ -689,6 +736,11 @@ const [validationError, setValidationError] = useState("");
           </div>
         )}
       </div>
+
+
+
+
+
 
       {/* ===== Maximum Loan Summary (below Client Details) ===== */}
       {canShowMatrix && bestSummary && (
@@ -779,9 +831,9 @@ const [validationError, setValidationError] = useState("");
                       }}
                     >
                       {anyBelowMin &&
-                        "ⓘOne or more gross loans are below the £150,000 minimum threshold. "}
+                        "One or more gross loans are below the &pound;150,000 minimum threshold. "}
                       {anyAtMaxCap &&
-                        "ⓘ One or more gross loans are capped at the £3,000,000 maximum."}
+                        "One or more gross loans are capped at the &pound;3,000,000 maximum."}
                     </div>
                   )}
 
@@ -792,9 +844,8 @@ const [validationError, setValidationError] = useState("");
                       display: "grid",
                       gridTemplateRows: `
                         55px
-                        48px 48px 48px 48px 48px
-                        48px 48px 48px 80px 48px 
-
+                        48px 48px 65px 48px 48px
+                        48px 48px 48px 48px 48px 85px 48px
                       `,
                     }}
                   >
@@ -813,9 +864,9 @@ const [validationError, setValidationError] = useState("");
                       </b>
                     </div>
 
-
                     <div className="mRow"><b>Product Fee</b></div>
-                    
+                    <div className="mRow"><b>Rolled Months Interest</b></div>
+                    <div className="mRow"><b>Deferred Interest</b></div>
                     <div className="mRow"><b>Direct Debit</b></div>
                     <div className="mRow"><b>Revert Rate</b></div>
                     <div className="mRow"><b>Total Term | ERC</b></div>
@@ -835,8 +886,8 @@ const [validationError, setValidationError] = useState("");
                           display: "grid",
                           gridTemplateRows: `
                             55px
-                            48px 48px 48px 48px 48px
-                            48px 48px 48px 80px 48px 
+                            48px 48px 65px 48px 48px
+                            48px 48px 48px 48px 48px 85px 48px
                           `,
                         }}
                       >
@@ -847,6 +898,9 @@ const [validationError, setValidationError] = useState("");
                         <div className="mRow">
                           <div className="mValue" style={valueBoxStyle}>
                             {data.payRateText}
+                            <span style={{ fontWeight: 500, fontSize: 10, marginLeft: 6 }}>
+                              (using {(data.deferredCapPct * 100).toFixed(2)}% deferred)
+                            </span>
                           </div>
                         </div>
                         <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.net)}</div></div>
@@ -861,15 +915,25 @@ const [validationError, setValidationError] = useState("");
                           </div>
                         </div>
 
+
                         <div className="mRow">
                           <div className="mValue" style={valueBoxStyle}>
                             {fmtMoney0(data.feeAmt)} ({Number(colKey).toFixed(2)}%)
                           </div>
                         </div>
-                        
                         <div className="mRow">
                           <div className="mValue" style={valueBoxStyle}>
-                            {fmtMoney0(data.directDebit)} from month 1
+                            {fmtMoney0(data.rolled)} ({data.rolledMonths} months)
+                          </div>
+                        </div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {fmtMoney0(data.deferred)} ({(data.deferredCapPct * 100).toFixed(2)}%)
+                          </div>
+                        </div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {fmtMoney0(data.directDebit)} from month {MAX_ROLLED_MONTHS + 1}
                           </div>
                         </div>
                         <div className="mRow"><div className="mValue" style={valueBoxStyle}>{formatRevertRate(tier)}</div></div>
@@ -878,7 +942,11 @@ const [validationError, setValidationError] = useState("");
                             {TOTAL_TERM} years | {formatERC(productType)}
                           </div>
                         </div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{(data.maxLTVRule * 100).toFixed(0)}%</div></div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {(data.maxLtvRule * 100).toFixed(0)}%
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -905,12 +973,69 @@ const [validationError, setValidationError] = useState("");
               marginBottom: 12,
             }}
           >
-            This product does not have rolled or deferred interest.
+            Results currently use maximum rolled months & deferred interest. Speak with an
+            underwriter for a customised loan illustration which can utilise less rolled and
+            deferred interest (which can increase the net loan on day 1).
           </div>
 
           {/* Use the SAME .matrix grid so columns line up perfectly */}
           <div className="matrix" style={{ rowGap: 0 }}>
-            
+            {/* labels spacer column (same width as above: 200px) */}
+            <div
+              className="matrixLabels"
+              style={{
+                display: "grid",
+                gridTemplateRows: `48px`,
+                border: "1px solid transparent",
+                background: "transparent",
+              }}
+            >
+              <div className="mRow" style={{ justifyContent: "center", color: "#475569" }}>
+                <b>Basic Gross (no roll/deferred)</b>
+              </div>
+            </div>
+
+            {/* one aligned row per product column */}
+            {SHOW_FEE_COLS.map((k, idx) => {
+              const d = computeBasicGrossForCol(k);
+              if (!d) return null;
+
+              const headClass =
+                idx === 0 ? "headGreen" : idx === 1 ? "headOrange" : idx === 2 ? "headTeal" : "headBlue";
+
+              return (
+                <div
+                  key={`basic-${k}`}
+                  className="matrixCol"
+                  style={{
+                    display: "grid",
+                    gridTemplateRows: `48px`,
+                    borderTopLeftRadius: 0,
+                    borderTopRightRadius: 0,
+                  }}
+                >
+                  <div className="mRow" style={{ padding: 6 }}>
+                    <div
+                      className="mValue"
+                      style={{
+                        width: "100%",
+                        textAlign: "center",
+                        fontWeight: 800,
+                        background: "#f1f5f9",
+                        borderRadius: 8,
+                        padding: "10px 12px",
+                      }}
+                    >
+                      {fmtMoney0(d.grossBasic)}{" "}
+                      <span style={{ fontWeight: 700 }}>
+                        @ {d.ltvPctBasic != null ? `${d.ltvPctBasic}% LTV` : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
             {/* Footer line under the aligned row */}
             <div style={{ gridColumn: "1 / -1", textAlign: "center", marginTop: 12, fontSize: 12, color: "#334155" }}>
               <span style={{ marginRight: 16 }}>
@@ -928,4 +1053,4 @@ const [validationError, setValidationError] = useState("");
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("calc-root")).render(<App />);

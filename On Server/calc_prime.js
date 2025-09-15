@@ -408,8 +408,7 @@ const [validationError, setValidationError] = useState("");
     <div className="container">
       {/* --------------------- Property Details (full width) -------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1", position: "relative" }}>
-        
-        {/* New flexbox container for header elements */}
+         {/* New flexbox container for header elements */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           
           
@@ -421,9 +420,7 @@ const [validationError, setValidationError] = useState("");
               Exclusions
               <div className="exclusion-list">
   <ul>
-    <li>Holiday Let</li>
-    <li>First Time Buyer</li>
-    <li>Offshore Company</li>
+    
     <li>Foreign National</li>
     <li>Bankruptcy</li>
     <li>Flat above commercial</li>
@@ -432,6 +429,7 @@ const [validationError, setValidationError] = useState("");
             </div>
           </div>
         </div>
+        
 
         {/* This is the section you want to move */}
         <div className="note" style={{ marginBottom: 8, marginTop: '20px' }}>
@@ -779,7 +777,7 @@ const [validationError, setValidationError] = useState("");
                       }}
                     >
                       {anyBelowMin &&
-                        "ⓘOne or more gross loans are below the £150,000 minimum threshold. "}
+                        "One or more gross loans are below the &pound;150,000 minimum threshold. "}
                       {anyAtMaxCap &&
                         "ⓘ One or more gross loans are capped at the £3,000,000 maximum."}
                     </div>
