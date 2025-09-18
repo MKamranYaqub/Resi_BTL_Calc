@@ -409,29 +409,7 @@ const [validationError, setValidationError] = useState("");
       {/* --------------------- Property Details (full width) -------------------- */}
       <div className="card" style={{ gridColumn: "1 / -1", position: "relative" }}>
         
-        {/* New flexbox container for header elements */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          
-          
-
-          {/* Right side: Links and Exclusions */}
-          <div className="top-right-container">
-            
-            <div className="top-right-exclusions">
-              Exclusions
-              <div className="exclusion-list">
-  <ul>
-    <li>Holiday Let</li>
-    <li>First Time Buyer</li>
-    <li>Offshore Company</li>
-    <li>Foreign National</li>
-    <li>Bankruptcy</li>
-    <li>Flat above commercial</li>
-  </ul>
-</div>
-            </div>
-          </div>
-        </div>
+        
 
         {/* This is the section you want to move */}
         <div className="note" style={{ marginBottom: 8, marginTop: '20px' }}>
