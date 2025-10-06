@@ -637,6 +637,7 @@ function App() {
         chargeType,
         firstChargeDisplay,
         propertyType,
+        loanProduct,
         propertyValue: propertyValue,
         loanAmount:
           useSpecificNetLoan === "Yes"
