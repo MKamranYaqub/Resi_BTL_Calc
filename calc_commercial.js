@@ -57,7 +57,7 @@ function getMaxLTV(tier, flatAboveComm) {
   if (tier === "Tier 2" || flatAboveComm === "Yes") {
     return 0.7;
   }
-  return 0.70;
+  return 0.7;
 }
 
 /* ----------------------------------- App ----------------------------------- */
@@ -65,6 +65,7 @@ function App() {
   const [productType, setProductType] = useState("2yr Fix");
   const [useSpecificNet, setUseSpecificNet] = useState("No");
   const [specificNetLoan, setSpecificNetLoan] = useState("");
+  const [propertyType, setPropertyType] = useState("Commercial");
 
   // Client / Lead
   const [clientName, setClientName] = useState("");
@@ -78,14 +79,14 @@ function App() {
   const [monthlyRent, setMonthlyRent] = useState("");
   const [validationError, setValidationError] = useState("");
 
-const isValidEmail = (v) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
+  const isValidEmail = (v) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
 
-const cleanDigits = (v) => String(v).replace(/[^\d]/g, "");   // keep digits only
-const isValidPhone = (v) => {
-  const d = cleanDigits(v);
-  return d.length >= 10 && d.length <= 15; // UK/intl tolerances
-};
+  const cleanDigits = (v) => String(v).replace(/[^\d]/g, ""); // keep digits only
+  const isValidPhone = (v) => {
+    const d = cleanDigits(v);
+    return d.length >= 10 && d.length <= 15; // UK/intl tolerances
+  };
 
   // Property drivers
   const [hmo, setHmo] = useState("No (Tier 1)");
@@ -137,16 +138,24 @@ const isValidPhone = (v) => {
 
     if (adverse === "Yes") {
       const advMapMA = {
-        "No": 1, "2 in 18, 0 in 6": 1, "Other, more recent": 2,
+        No: 1,
+        "2 in 18, 0 in 6": 1,
+        "Other, more recent": 2,
       };
       const advMapUA = {
-        "No": 1, "2 in last 18": 1, "Other, more recent": 2,
+        No: 1,
+        "2 in last 18": 1,
+        "Other, more recent": 2,
       };
       const advMapCD = {
-        "No": 1, "2 in 18, 0 in 6": 1, "Other, more recent": 2,
+        No: 1,
+        "2 in 18, 0 in 6": 1,
+        "Other, more recent": 2,
       };
       const advMapBank = {
-        Never: 1, "Discharged >3yrs": 1, "Other, more recent": 2,
+        Never: 1,
+        "Discharged >3yrs": 1,
+        "Other, more recent": 2,
       };
       const adverseTier = Math.max(
         advMapMA[mortArrears] || 1,
@@ -159,24 +168,40 @@ const isValidPhone = (v) => {
 
     return t === 1 ? "Tier 1" : "Tier 2";
   }, [
-    hmo, mufb, expat, ownerocc, devexit, flatAboveComm, ftl, offshore,
-    adverse, mortArrears, unsArrears, ccjDefault, bankruptcy,
+    hmo,
+    mufb,
+    expat,
+    ownerocc,
+    devexit,
+    flatAboveComm,
+    ftl,
+    offshore,
+    adverse,
+    mortArrears,
+    unsArrears,
+    ccjDefault,
+    bankruptcy,
   ]);
 
   const selected =
-    window.RATES_Commercial?.[tier]?.products?.[productType] || {};
+    (propertyType === "Semi Commercial"
+      ? window.RATES_SemiCommercial?.[tier]?.products?.[productType]
+      : window.RATES_Commercial?.[tier]?.products?.[productType]) || {};
 
   const isTracker = !!selected?.isMargin;
 
   // External constants
-  const MIN_ICR_FIX = window.MIN_ICR_Commercial?.Fix ?? 1.25;
-  const MIN_ICR_TRK = window.MIN_ICR_Commercial?.Tracker ?? 1.3;
+  const MIN_ICR_FIX =  propertyType === "Semi Commercial"    ? window.MIN_ICR_SemiCommercial?.Fix ?? 1.25    : window.MIN_ICR_Commercial?.Fix ?? 1.25;
+  const MIN_ICR_TRK =  propertyType === "Semi Commercial"    ? window.MIN_ICR_SemiCommercial?.Tracker ?? 1.3    : window.MIN_ICR_Commercial?.Tracker ?? 1.3;   
   const MIN_LOAN = window.MIN_LOAN_Commercial ?? 150000;
   const MAX_LOAN = window.MAX_LOAN_Commercial ?? 2000000;
   const STANDARD_BBR = window.STANDARD_BBR_Commercial ?? 0.04;
   const STRESS_BBR = window.STRESS_BBR_Commercial ?? 0.0425;
   const TERM_MONTHS = window.TERM_MONTHS_Commercial ?? {
-    "2yr Fix": 24, "3yr Fix": 36, "2yr Tracker": 24, Tracker: 24,
+    "2yr Fix": 24,
+    "3yr Fix": 36,
+    "2yr Tracker": 24,
+    Tracker: 24,
   };
   const TOTAL_TERM = window.TOTAL_TERM_Commercial ?? 10;
   const CURRENT_MVR = window.CURRENT_MVR_Commercial ?? 0.0859;
@@ -197,10 +222,14 @@ const isValidPhone = (v) => {
     if (base == null) return null;
 
     const displayRate = isTracker ? base + STANDARD_BBR : base;
-    const fullRateText = isTracker ? `${(base * 100).toFixed(2)}% + BBR` : `${(base * 100).toFixed(2)}%`;
+    const fullRateText = isTracker
+      ? `${(base * 100).toFixed(2)}% + BBR`
+      : `${(base * 100).toFixed(2)}%`;
     const deferredCap = isTracker ? MAX_DEFERRED_TRACKER : MAX_DEFERRED_FIX;
     const payRateAdj = Math.max(displayRate - deferredCap, 0);
-    const payRateText = isTracker ? `${((base - deferredCap) * 100).toFixed(2)}% + BBR` : `${(payRateAdj * 100).toFixed(2)}%`;
+    const payRateText = isTracker
+      ? `${((base - deferredCap) * 100).toFixed(2)}% + BBR`
+      : `${(payRateAdj * 100).toFixed(2)}%`;
     const pv = toNumber(propertyValue);
     const mr = toNumber(monthlyRent);
     const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
@@ -223,7 +252,11 @@ const isValidPhone = (v) => {
     if (N_input && useSpecificNet === "Yes") {
       const rolledFactor = stressAdj * (rolledMonths / 12);
       const numerator = N_input;
-      const denominator = (1 - (deferredCap / 12 * (termMonths)) - feePct - (payRateAdj) / 12 * rolledMonths);
+      const denominator =
+        1 -
+        (deferredCap / 12) * termMonths -
+        feePct -
+        (payRateAdj / 12) * rolledMonths;
       grossFromNet = numerator / denominator;
     }
 
@@ -234,7 +267,8 @@ const isValidPhone = (v) => {
     const belowMin = eligibleGross < MIN_LOAN - 1e-6;
     const hitMaxCap = Math.abs(eligibleGross - MAX_LOAN) < 1e-6;
     const feeAmt = eligibleGross * feePct;
-    const rolled = ((eligibleGross * (displayRate - deferredCap)) / 12) * rolledMonths;
+    const rolled =
+      ((eligibleGross * (displayRate - deferredCap)) / 12) * rolledMonths;
     const deferred = ((eligibleGross * deferredCap) / 12) * termMonths;
     const net = eligibleGross - feeAmt - rolled - deferred;
     const ltv = pv ? eligibleGross / pv : null;
@@ -242,113 +276,163 @@ const isValidPhone = (v) => {
 
     return {
       productName: `${productType}, ${tier}`,
-      fullRateText, payRateText, deferredCapPct: deferredCap, net, gross: eligibleGross,
-      feeAmt, rolled, deferred, ltv, rolledMonths, directDebit: ddAmount,
-      maxLtvRule: maxLTV, termMonths, belowMin, hitMaxCap,
+      fullRateText,
+      payRateText,
+      deferredCapPct: deferredCap,
+      net,
+      gross: eligibleGross,
+      feeAmt,
+      rolled,
+      deferred,
+      ltv,
+      rolledMonths,
+      directDebit: ddAmount,
+      maxLtvRule: maxLTV,
+      termMonths,
+      belowMin,
+      hitMaxCap,
     };
   }
 
   function computeBasicGrossForCol(colKey) {
-  const base = selected?.[colKey];
-  if (base == null) return null;
+    const base = selected?.[colKey];
+    if (base == null) return null;
 
-  const pv = toNumber(propertyValue);
-  const mr = toNumber(monthlyRent);
-  const sn = toNumber(specificNetLoan);
-  const feePct = Number(colKey) / 100;
-  const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
-  const maxLTV = getMaxLTV(tier, flatAboveComm);
-  const grossLTV = pv ? pv * maxLTV : Infinity;
-  const displayRate = isTracker ? base + STANDARD_BBR : base;
-  const stressRate = isTracker ? base + STRESS_BBR : displayRate;
-  const deferredCap = 0;
-  const stressAdj = Math.max(stressRate - deferredCap, 1e-6);
+    const pv = toNumber(propertyValue);
+    const mr = toNumber(monthlyRent);
+    const sn = toNumber(specificNetLoan);
+    const feePct = Number(colKey) / 100;
+    const minICR = productType.includes("Fix") ? MIN_ICR_FIX : MIN_ICR_TRK;
+    const maxLTV = getMaxLTV(tier, flatAboveComm);
+    const grossLTV = pv ? pv * maxLTV : Infinity;
+    const displayRate = isTracker ? base + STANDARD_BBR : base;
+    const stressRate = isTracker ? base + STRESS_BBR : displayRate;
+    const deferredCap = 0;
+    const stressAdj = Math.max(stressRate - deferredCap, 1e-6);
 
-  let grossRent = Infinity;
-  if (mr && stressAdj) {
-    const annualRent = mr * 12;
-    grossRent = annualRent / (minICR * stressAdj);
+    let grossRent = Infinity;
+    if (mr && stressAdj) {
+      const annualRent = mr * 12;
+      grossRent = annualRent / (minICR * stressAdj);
+    }
+
+    let grossFromNet = Infinity;
+    if (useSpecificNet === "Yes" && sn != null && feePct < 1) {
+      grossFromNet = sn / (1 - feePct);
+    }
+
+    const eligibleGross = Math.min(grossLTV, grossRent, grossFromNet, MAX_LOAN);
+    const ltvPct = pv ? Math.round((eligibleGross / pv) * 100) : null;
+
+    return { grossBasic: eligibleGross, ltvPctBasic: ltvPct };
   }
-
-  let grossFromNet = Infinity;
-  if (useSpecificNet === "Yes" && sn != null && feePct < 1) {
-    grossFromNet = sn / (1 - feePct);
-  }
-
-  const eligibleGross = Math.min(grossLTV, grossRent, grossFromNet, MAX_LOAN);
-  const ltvPct = pv ? Math.round((eligibleGross / pv) * 100) : null;
-
-  return { grossBasic: eligibleGross, ltvPctBasic: ltvPct };
-}
 
   const bestSummary = useMemo(() => {
     if (!canShowMatrix) return null;
     const pv = toNumber(propertyValue) || 0;
-    const items = SHOW_FEE_COLS.map((k) => [k, computeForCol(k)]).filter(([, d]) => !!d);
+    const items = SHOW_FEE_COLS.map((k) => [k, computeForCol(k)]).filter(
+      ([, d]) => !!d
+    );
     if (!items.length) return null;
 
     let best = null;
     for (const [colKey, d] of items) {
       if (!best || d.gross > best.gross) {
         best = {
-          colKey, gross: d.gross, grossStr: fmtMoney0(d.gross),
+          colKey,
+          gross: d.gross,
+          grossStr: fmtMoney0(d.gross),
           grossLtvPct: pv ? Math.round((d.gross / pv) * 100) : 0,
-          net: d.net, netStr: fmtMoney0(d.net),
+          net: d.net,
+          netStr: fmtMoney0(d.net),
           netLtvPct: pv ? Math.round((d.net / pv) * 100) : 0,
         };
       }
     }
     return best;
   }, [
-    productType, tier, propertyValue, monthlyRent, useSpecificNet,
-    specificNetLoan, flatAboveComm, canShowMatrix,
+    productType,
+    tier,
+    propertyValue,
+    monthlyRent,
+    useSpecificNet,
+    specificNetLoan,
+    flatAboveComm,
+    canShowMatrix,
   ]);
 
   /* --------------------------- Send Quote via Zapier ---------------------------- */
   /* --------------------------- Send Quote via Email --------------------------- */
   const handleSendQuote = async () => {
-  // Reset previous errors first
-  setValidationError("");
-  setSendStatus(null);
+    // Reset previous errors first
+    setValidationError("");
+    setSendStatus(null);
 
-  // Check if a calculation is ready to be sent
-  if (!canShowMatrix || !bestSummary) {
-    setValidationError("Please complete the calculation fields before sending email.");
-    return;
-  }
+    // Check if a calculation is ready to be sent
+    if (!canShowMatrix || !bestSummary) {
+      setValidationError(
+        "Please complete the calculation fields before sending email."
+      );
+      return;
+    }
 
-  // VALIDATION: Check for empty name, phone, and email fields
-  if (!clientName.trim() || !clientPhone.trim() || !clientEmail.trim()) {
-    setValidationError("Please complete all client fields before sending email.");
-    return; // Stop the function here if fields are empty
-  }
+    // VALIDATION: Check for empty name, phone, and email fields
+    if (!clientName.trim() || !clientPhone.trim() || !clientEmail.trim()) {
+      setValidationError(
+        "Please complete all client fields before sending email."
+      );
+      return; // Stop the function here if fields are empty
+    }
 
-  // VALIDATION: Check for a valid email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(clientEmail)) {
-    setValidationError("Please enter a valid email address.");
-    return; // Stop the function here if email is invalid
-  }    setSending(true);
+    // VALIDATION: Check for a valid email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(clientEmail)) {
+      setValidationError("Please enter a valid email address.");
+      return; // Stop the function here if email is invalid
+    }
+    setSending(true);
     setSendStatus(null); // Reset status on new attempt
 
     try {
-      const zapierWebhookUrl = "https://hooks.zapier.com/hooks/catch/10082441/uhbzcvu/";
+      const zapierWebhookUrl =
+        "https://hooks.zapier.com/hooks/catch/10082441/uhbzcvu/";
 
-      const columnCalculations = SHOW_FEE_COLS
-        .map((k) => ({ feePercent: k, ...computeForCol(k) }))
-        .filter((d) => !!d.gross);
-      
-      const basicGrossCalculations = SHOW_FEE_COLS
-        .map((k) => computeBasicGrossForCol(k))
-        .filter(Boolean);
+      const columnCalculations = SHOW_FEE_COLS.map((k) => ({
+        feePercent: k,
+        ...computeForCol(k),
+      })).filter((d) => !!d.gross);
+
+      const basicGrossCalculations = SHOW_FEE_COLS.map((k) =>
+        computeBasicGrossForCol(k)
+      ).filter(Boolean);
 
       const basePayload = {
-        requestId: `MFS-COMM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        clientName, clientPhone, clientEmail,
-        propertyValue, monthlyRent, productType, useSpecificNet, specificNetLoan,
-        hmo, mufb, holiday, flatAboveComm, ownerocc, devexit,
-        expat, ftl, offshore,
-        adverse, mortArrears, unsArrears, ccjDefault, bankruptcy,
+        requestId: `MFS-COMM-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`,
+        clientName,
+        clientPhone,
+        clientEmail,
+        propertyValue,
+        propertyType,
+        monthlyRent,
+        productType,
+        useSpecificNet,
+        specificNetLoan,
+        hmo,
+        mufb,
+        holiday,
+        flatAboveComm,
+        ownerocc,
+        devexit,
+        expat,
+        ftl,
+        offshore,
+        adverse,
+        mortArrears,
+        unsArrears,
+        ccjDefault,
+        bankruptcy,
         tier,
         submissionTimestamp: new Date().toISOString(),
         revertRate: formatRevertRate(tier),
@@ -359,23 +443,33 @@ const isValidPhone = (v) => {
       };
 
       const flatPayload = { ...basePayload };
-      
+
       for (const key in bestSummary) {
-        flatPayload[`bestSummary${key.charAt(0).toUpperCase() + key.slice(1)}`] = bestSummary[key];
+        flatPayload[
+          `bestSummary${key.charAt(0).toUpperCase() + key.slice(1)}`
+        ] = bestSummary[key];
       }
 
       columnCalculations.forEach((col, index) => {
         for (const key in col) {
-          flatPayload[`allColumnData${key.charAt(0).toUpperCase() + key.slice(1)}_${index}`] = col[key];
+          flatPayload[
+            `allColumnData${
+              key.charAt(0).toUpperCase() + key.slice(1)
+            }_${index}`
+          ] = col[key];
         }
       });
-      
+
       basicGrossCalculations.forEach((col, index) => {
         for (const key in col) {
-          flatPayload[`basicGrossColumnData${key.charAt(0).toUpperCase() + key.slice(1)}_${index}`] = col[key];
+          flatPayload[
+            `basicGrossColumnData${
+              key.charAt(0).toUpperCase() + key.slice(1)
+            }_${index}`
+          ] = col[key];
         }
       });
-      
+
       const form = new URLSearchParams();
       for (const [k, v] of Object.entries(flatPayload)) {
         form.append(k, v);
@@ -383,7 +477,9 @@ const isValidPhone = (v) => {
 
       const res = await fetch(zapierWebhookUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
         body: form.toString(),
       });
 
@@ -415,8 +511,6 @@ const isValidPhone = (v) => {
   return (
     <div className="container">
       <div className="card" style={{ gridColumn: "1 / -1" }}>
-        
-    
         <div className="note" style={{ marginBottom: 8 }}>
           Tier is calculated automatically from the inputs below. Current:{" "}
           <b>{tier}</b>
@@ -426,6 +520,16 @@ const isValidPhone = (v) => {
           <SectionTitle>Property Type</SectionTitle>
 
           <div className="field">
+            <label>Property Type</label>
+            <select
+              value={propertyType}
+              onChange={(e) => setPropertyType(e.target.value)}
+            >
+              <option>Commercial</option>
+              <option>Semi Commercial</option>
+            </select>
+          </div>
+          <div className="field">
             <label>HMO</label>
             <select value={hmo} onChange={(e) => setHmo(e.target.value)}>
               <option>No (Tier 1)</option>
@@ -433,7 +537,6 @@ const isValidPhone = (v) => {
               <option>More than 12 beds (Tier 2)</option>
             </select>
           </div>
-
           <div className="field">
             <label>MUFB</label>
             <select value={mufb} onChange={(e) => setMufb(e.target.value)}>
@@ -443,7 +546,7 @@ const isValidPhone = (v) => {
             </select>
           </div>
           <div className="field">
-            <label>Owner Occupier?</label>
+            <label>Commercial Owner Occupier?</label>
             <select
               value={ownerocc}
               onChange={(e) => setOwnerocc(e.target.value)}
@@ -473,7 +576,7 @@ const isValidPhone = (v) => {
           </div>
 
           <div className="field">
-            <label>First Time Landlord?</label>
+            <label>First Time Commercial Landlord?</label>
             <select value={ftl} onChange={(e) => setFtl(e.target.value)}>
               <option>No</option>
               <option>Yes</option>
@@ -646,12 +749,14 @@ const isValidPhone = (v) => {
           <div className="field">
             <label>Contact Number</label>
             <input
-  type="tel"
-  placeholder="e.g. 07123 456789"
-  value={clientPhone}
-  onChange={(e) => setClientPhone(cleanDigits(e.target.value))}
-  aria-invalid={validationError && !isValidPhone(clientPhone) ? "true" : "false"}
-/>
+              type="tel"
+              placeholder="e.g. 07123 456789"
+              value={clientPhone}
+              onChange={(e) => setClientPhone(cleanDigits(e.target.value))}
+              aria-invalid={
+                validationError && !isValidPhone(clientPhone) ? "true" : "false"
+              }
+            />
           </div>
 
           <div className="field">
@@ -676,18 +781,43 @@ const isValidPhone = (v) => {
           </div>
         </div>
         {/* ADD THIS BLOCK HERE TO DISPLAY THE ERROR */}
-  {validationError && (
-    <div style={{ marginTop: "16px", color: "#b91c1c", fontWeight: "50-0", textAlign: "center" }}>
-      {validationError}
-    </div>
-  )}
+        {validationError && (
+          <div
+            style={{
+              marginTop: "16px",
+              color: "#b91c1c",
+              fontWeight: "50-0",
+              textAlign: "center",
+            }}
+          >
+            {validationError}
+          </div>
+        )}
         {sendStatus === "success" && (
-          <div style={{ marginTop: "16px", padding: "16px", background: "#f0fdf4", border: "1px solid #4ade80", color: "#166534", borderRadius: "8px" }}>
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "16px",
+              background: "#f0fdf4",
+              border: "1px solid #4ade80",
+              color: "#166534",
+              borderRadius: "8px",
+            }}
+          >
             Email sent successfully!
           </div>
         )}
         {sendStatus === "error" && (
-          <div style={{ marginTop: "16px", padding: "16px", background: "#fff1f2", border: "1px solid #f87171", color: "#b91c1c", borderRadius: "8px" }}>
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "16px",
+              background: "#fff1f2",
+              border: "1px solid #f87171",
+              color: "#b91c1c",
+              borderRadius: "8px",
+            }}
+          >
             Failed to send email. Please try again later.
           </div>
         )}
@@ -801,27 +931,61 @@ const isValidPhone = (v) => {
                     }}
                   >
                     <div className="labelsHead"></div>
-                    <div className="mRow"><b>Product Name</b></div>
-                    <div className="mRow"><b>Full Rate</b></div>
-                    <div className="mRow"><b>Pay Rate</b></div>
                     <div className="mRow">
-                      <b>Net Loan <span style={{ fontSize: "11px", fontWeight: 400 }}>(advanced day 1)</span></b>
+                      <b>Product Name</b>
                     </div>
                     <div className="mRow">
-                      <b>Max Gross Loan <span style={{ fontSize: "11px", fontWeight: 400 }}>(paid at redemption)</span></b>
+                      <b>Full Rate</b>
                     </div>
-                    <div className="mRow"><b>Product Fee</b></div>
-                    <div className="mRow"><b>Rolled Months Interest</b></div>
-                    <div className="mRow"><b>Deferred Interest</b></div>
-                    <div className="mRow"><b>Direct Debit</b></div>
-                    <div className="mRow"><b>Revert Rate</b></div>
-                    <div className="mRow"><b>Total Term | ERC</b></div>
-                    <div className="mRow"><b>Max Product LTV</b></div>
+                    <div className="mRow">
+                      <b>Pay Rate</b>
+                    </div>
+                    <div className="mRow">
+                      <b>
+                        Net Loan{" "}
+                        <span style={{ fontSize: "11px", fontWeight: 400 }}>
+                          (advanced day 1)
+                        </span>
+                      </b>
+                    </div>
+                    <div className="mRow">
+                      <b>
+                        Max Gross Loan{" "}
+                        <span style={{ fontSize: "11px", fontWeight: 400 }}>
+                          (paid at redemption)
+                        </span>
+                      </b>
+                    </div>
+                    <div className="mRow">
+                      <b>Product Fee</b>
+                    </div>
+                    <div className="mRow">
+                      <b>Rolled Months Interest</b>
+                    </div>
+                    <div className="mRow">
+                      <b>Deferred Interest</b>
+                    </div>
+                    <div className="mRow">
+                      <b>Direct Debit</b>
+                    </div>
+                    <div className="mRow">
+                      <b>Revert Rate</b>
+                    </div>
+                    <div className="mRow">
+                      <b>Total Term | ERC</b>
+                    </div>
+                    <div className="mRow">
+                      <b>Max Product LTV</b>
+                    </div>
                   </div>
 
                   {colData.map(([colKey, data], idx) => {
                     const headClass =
-                      idx === 0 ? "headGreen" : idx === 1 ? "headOrange" : "headBlue";
+                      idx === 0
+                        ? "headGreen"
+                        : idx === 1
+                        ? "headOrange"
+                        : "headBlue";
 
                     return (
                       <div
@@ -837,37 +1001,91 @@ const isValidPhone = (v) => {
                         }}
                       >
                         <div className={`matrixHead ${headClass}`}>
-                          BTL, {Number(colKey)}% Product Fee
+                          BTL {propertyType} {Number(colKey)}% Fee
                         </div>
 
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{data.productName}</div></div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{data.fullRateText}</div></div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {data.productName}
+                          </div>
+                        </div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {data.fullRateText}
+                          </div>
+                        </div>
                         <div className="mRow">
                           <div className="mValue" style={valueBoxStyle}>
                             {data.payRateText}
-                            <span style={{fontWeight: 500, fontSize: 10, marginLeft: 6,}}>
-                              (using {(data.deferredCapPct * 100).toFixed(2)}% deferred)
+                            <span
+                              style={{
+                                fontWeight: 500,
+                                fontSize: 10,
+                                marginLeft: 6,
+                              }}
+                            >
+                              (using {(data.deferredCapPct * 100).toFixed(2)}%
+                              deferred)
                             </span>
                           </div>
                         </div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.net)}</div></div>
                         <div className="mRow">
                           <div className="mValue" style={valueBoxStyle}>
-                            <span style={{ fontWeight: 700 }}>{fmtMoney0(data.gross)}</span>
+                            {fmtMoney0(data.net)}
+                          </div>
+                        </div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            <span style={{ fontWeight: 700 }}>
+                              {fmtMoney0(data.gross)}
+                            </span>
                             {data.ltv != null && (
                               <span style={{ fontWeight: 400 }}>
-                                {" "} @ {Math.round(data.ltv * 100)}% LTV
+                                {" "}
+                                @ {Math.round(data.ltv * 100)}% LTV
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.feeAmt)} ({Number(colKey).toFixed(2)}%)</div></div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.rolled)} ({data.rolledMonths}{" "}months)</div></div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.deferred)} ({(data.deferredCapPct * 100).toFixed(2)}%)</div></div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{fmtMoney0(data.directDebit)} from month{" "}{MAX_ROLLED_MONTHS + 1}</div></div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{formatRevertRate(tier)}</div></div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{TOTAL_TERM} years | {formatERC(productType)}</div></div>
-                        <div className="mRow"><div className="mValue" style={valueBoxStyle}>{(data.maxLtvRule * 100).toFixed(0)}%</div></div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {fmtMoney0(data.feeAmt)} (
+                            {Number(colKey).toFixed(2)}%)
+                          </div>
+                        </div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {fmtMoney0(data.rolled)} ({data.rolledMonths}{" "}
+                            months)
+                          </div>
+                        </div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {fmtMoney0(data.deferred)} (
+                            {(data.deferredCapPct * 100).toFixed(2)}%)
+                          </div>
+                        </div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {fmtMoney0(data.directDebit)} from month{" "}
+                            {MAX_ROLLED_MONTHS + 1}
+                          </div>
+                        </div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {formatRevertRate(tier)}
+                          </div>
+                        </div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {TOTAL_TERM} years | {formatERC(productType)}
+                          </div>
+                        </div>
+                        <div className="mRow">
+                          <div className="mValue" style={valueBoxStyle}>
+                            {(data.maxLtvRule * 100).toFixed(0)}%
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -908,7 +1126,10 @@ const isValidPhone = (v) => {
                 background: "transparent",
               }}
             >
-              <div className="mRow" style={{ justifyContent: "center", color: "#475569" }}>
+              <div
+                className="mRow"
+                style={{ justifyContent: "center", color: "#475569" }}
+              >
                 <b>Basic Gross (no roll/deferred)</b>
               </div>
             </div>
