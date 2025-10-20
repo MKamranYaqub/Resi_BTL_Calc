@@ -587,7 +587,7 @@ function App() {
   }, []);
   const rolledMonthsOptions = useMemo(() => {
     const options = [];
-    for (let i = 0; i <= loanTerm; i++) options.push(i);
+    for (let i = 3; i <= loanTerm; i++) options.push(i);
     return options;
   }, [loanTerm]);
 
