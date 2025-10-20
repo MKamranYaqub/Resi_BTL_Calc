@@ -371,7 +371,7 @@ function App() {
       const servicedMonths = Math.max(0, term - rolled);
       const monthlyDirectDebit =
         servicedMonths > 0 ? grossLoan * fullMonthlyRate : 0;
-      const totalRepayment = grossLoan + totalInterest;
+      const totalRepayment = grossLoan ;
       const netLoan =
         specificNetLoan !== null
           ? specificNetLoan
