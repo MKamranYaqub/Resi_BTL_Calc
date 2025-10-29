@@ -240,6 +240,22 @@ const [validationError, setValidationError] = useState("");
     const belowMin = eligibleGross < MIN_LOAN - 1e-6;
     const hitMaxCap = Math.abs(eligibleGross - MAX_LOAN) < 1e-6;
 
+    if (belowMin) {
+  return {
+    productName: `${productType}, ${tier}`,
+    fullRateText,
+    payRateText,
+    net: 0,
+    gross: 0,
+    feeAmt: 0,
+    ltv: 0,
+    directDebit: 0,
+    maxLTVRule: maxLTV,
+    belowMin,
+    hitMaxCap,
+  };
+}
+
     const feeAmt = eligibleGross * feePct;
     const net = eligibleGross - feeAmt;
     const ltv = pv ? eligibleGross / pv : null;
@@ -757,9 +773,9 @@ const [validationError, setValidationError] = useState("");
                       }}
                     >
                       {anyBelowMin &&
-                        "ⓘOne or more gross loans are below the £150,000 minimum threshold. "}
+                        `⚠️ One or more gross loans are below the £${MIN_LOAN.toLocaleString()} minimum threshold. `}
                       {anyAtMaxCap &&
-                        "ⓘ One or more gross loans are capped at the £3,000,000 maximum."}
+                        `ⓘ One or more gross loans are capped at the £${MAX_LOAN.toLocaleString()} maximum.`}
                     </div>
                   )}
 

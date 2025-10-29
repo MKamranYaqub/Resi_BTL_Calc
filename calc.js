@@ -261,6 +261,28 @@ const isValidPhone = (v) => {
     const belowMin = eligibleGross < MIN_LOAN - 1e-6;
     const hitMaxCap = Math.abs(eligibleGross - MAX_LOAN) < 1e-6;
 
+// ✅ If gross loan is below minimum, show all 0s
+if (belowMin) {
+  return {
+    productName: `${productType}, ${tier}`,
+    fullRateText,
+    payRateText,
+    deferredCapPct: deferredCap,
+    net: 0,
+    gross: 0,
+    feeAmt: 0,
+    rolled: 0,
+    deferred: 0,
+    ltv: 0,
+    rolledMonths,
+    directDebit: 0,
+    maxLtvRule: maxLTV,
+    termMonths,
+    belowMin,
+    hitMaxCap,
+  };
+}
+
     const feeAmt = eligibleGross * feePct;
     const rolled = (eligibleGross * (displayRate - deferredCap) / 12) * rolledMonths;
     const deferred = (eligibleGross * deferredCap / 12) * termMonths;
@@ -831,9 +853,9 @@ const isValidPhone = (v) => {
                       }}
                     >
                       {anyBelowMin &&
-                        "One or more gross loans are below the &pound;150,000 minimum threshold. "}
+                        `⚠️ One or more gross loans are below the £${MIN_LOAN.toLocaleString()} minimum threshold. `}
                       {anyAtMaxCap &&
-                        "One or more gross loans are capped at the &pound;3,000,000 maximum."}
+                        `ⓘ One or more gross loans are capped at the £${MAX_LOAN.toLocaleString()} maximum.`}
                     </div>
                   )}
 
