@@ -24,7 +24,7 @@ window.RATES_Bridges = {
   "Variable Rate": {
     "Single Property": {
       "60% LTV": 0.0040,
-      "70% LTV": 0.0005,
+      "70% LTV": 0.0050,
       "75% LTV": 0.0060,
     },
     "Large Single Property": {
